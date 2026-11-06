@@ -1,0 +1,498 @@
+<section class="detalle-page">
+  <nav class="breadcrumbs" aria-label="Navegación">
+    <a routerLink="/">Inicio</a>
+    <span class="separator">/</span>
+    <a routerLink="/catalogo">Catálogo</a>
+    <span class="separator">/</span>
+    <span class="current">{{ vehiculo()?.modelo?.marca?.nombreMarca }} {{ vehiculo()?.modelo?.modelo }}</span>
+  </nav>
+
+  @if (!vehiculo()) {
+    <div class="not-found-card">
+      <mat-icon>no_crash</mat-icon>
+      <h2>Vehículo no encontrado</h2>
+      <p>El vehículo que estás buscando no existe o fue retirado temporalmente de la flota.</p>
+      <a mat-flat-button class="btn-navy" routerLink="/catalogo">Volver al catálogo</a>
+    </div>
+  } @else {
+    <header class="vehiculo-header">
+      <div class="header-left">
+        <div class="category-pill-row">
+          <span class="category-badge">{{ vehiculo()?.tipo?.nombreTipo }}</span>
+        </div>
+        <h1 class="vehiculo-titulo">{{ vehiculo()?.modelo?.marca?.nombreMarca }} {{ vehiculo()?.modelo?.modelo }}</h1>
+        <div class="subtitle-row">
+          <span class="year-text">Año: <strong>{{ vehiculo()?.anio }}</strong></span>
+          <span class="dot">&bull;</span>
+          <span class="color-text">Color: <strong>{{ colorVisual() || vehiculo()?.color || 'Gris Plata' }}</strong></span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="pricing-display">
+          <div class="main-price">
+            <span class="currency">S/</span>
+            <strong class="amount">{{ vehiculo()?.precioDia | number:'1.2-2' }}</strong>
+            <span class="unit">/día</span>
+          </div>
+        </div>
+
+        <button mat-icon-button class="btn-share" (click)="compartirVehiculo()" [matTooltip]="copiado() ? '¡Enlace copiado al portapapeles!' : 'Compartir enlace'">
+          <mat-icon>{{ copiado() ? 'done' : 'share' }}</mat-icon>
+        </button>
+      </div>
+    </header>
+
+    <div class="detalle-layout-grid">
+      <div class="col-main">
+        <section class="gallery-wrapper" aria-label="Galería del vehículo">
+          <div class="gallery-hero">
+            <img [src]="imagenActual()" [alt]="vehiculo()?.modelo?.marca?.nombreMarca + ' ' + vehiculo()?.modelo?.modelo" decoding="async" />
+            
+            <span class="counter-badge">
+              <mat-icon>photo_camera</mat-icon>
+              {{ imagenActivaIndex() + 1 }} / {{ imagenes().length }}
+            </span>
+
+            <button mat-icon-button class="gallery-nav-btn nav-prev" (click)="anteriorImagen()" aria-label="Foto anterior">
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+            <button mat-icon-button class="gallery-nav-btn nav-next" (click)="siguienteImagen()" aria-label="Foto siguiente">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+
+          <div class="thumbnails-track">
+            @for (img of imagenes(); track $index) {
+              <button
+                type="button"
+                class="thumb-btn"
+                [class.active]="imagenActivaIndex() === $index"
+                (click)="cambiarImagen($index)"
+                [attr.aria-label]="img.label">
+                <img [src]="img.url" [alt]="img.label" loading="lazy" decoding="async" />
+              </button>
+            }
+          </div>
+        </section>
+
+        <section class="specs-grid" aria-label="Características del vehículo">
+          <div class="spec-card">
+            <div class="spec-icon-box">
+              <mat-icon>group</mat-icon>
+            </div>
+            <div class="spec-data">
+              <strong class="spec-val">{{ capacidadPasajeros() }}</strong>
+              <span class="spec-lbl">Capacidad</span>
+            </div>
+          </div>
+
+          <div class="spec-card">
+            <div class="spec-icon-box">
+              <mat-icon>local_gas_station</mat-icon>
+            </div>
+            <div class="spec-data">
+              <strong class="spec-val">{{ vehiculo()?.combustible?.nombreCombustible || 'Gasolina' }}</strong>
+              <span class="spec-lbl">Combustible</span>
+            </div>
+          </div>
+
+          <div class="spec-card">
+            <div class="spec-icon-box">
+              <mat-icon>settings</mat-icon>
+            </div>
+            <div class="spec-data">
+              <strong class="spec-val">{{ tipoTransmision() }}</strong>
+              <span class="spec-lbl">Transmisión</span>
+            </div>
+          </div>
+
+          <div class="spec-card">
+            <div class="spec-icon-box">
+              <mat-icon>luggage</mat-icon>
+            </div>
+            <div class="spec-data">
+              <strong class="spec-val">{{ capacidadMaletero() }}</strong>
+              <span class="spec-lbl">Maletero</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="info-seguro-card">
+          <div class="info-seguro-header">
+            <mat-icon class="shield-icon">security</mat-icon>
+            <div>
+              <h3>Información de seguro Todo Riesgo</h3>
+              <p>
+                Al contratar la cobertura de seguro Todo Riesgo con <strong>Paul Car's Perú</strong>, el arrendatario asumirá únicamente el pago de un deducible mínimo en caso de cualquier siniestro o colisión vehicular.
+              </p>
+            </div>
+          </div>
+          <div class="info-seguro-benefits">
+            <div class="benefit-item">
+              <mat-icon>check_circle</mat-icon>
+              <span>Asistencia vial y auxilio mecánico 24/7 en Lima Metropolitana</span>
+            </div>
+            <div class="benefit-item">
+              <mat-icon>check_circle</mat-icon>
+              <span>Servicio de grúa sin recargo adicional en caso de avería</span>
+            </div>
+            <div class="benefit-item">
+              <mat-icon>check_circle</mat-icon>
+              <span>Cobertura contra robo total y daños materiales a terceros</span>
+            </div>
+          </div>
+        </section>
+
+        @if (vehiculosSimilares().length > 0) {
+          <section class="similares-section">
+            <div class="similares-title-row">
+              <h3>Vehículos Similares</h3>
+              <a routerLink="/catalogo" class="link-catalogo">Ver todo el catálogo &rarr;</a>
+            </div>
+
+            <div class="similares-grid">
+              @for (sim of vehiculosSimilares(); track sim.idVehiculo) {
+                <article class="similar-card">
+                  <div class="similar-img-box" [routerLink]="['/catalogo/vehiculo', sim.idVehiculo]" style="cursor: pointer;" title="Haz clic para ver el vehículo">
+                    <img [src]="obtenerImagenVehiculo(sim)" [alt]="sim.modelo?.marca?.nombreMarca + ' ' + sim.modelo?.modelo" (error)="$any($event.target).src = '/images/vehiculos/corolla.jpg'" loading="lazy" decoding="async" />
+                    <span class="similar-type-tag">{{ sim.tipo?.nombreTipo }}</span>
+                  </div>
+                  <div class="similar-body">
+                    <h4 [routerLink]="['/catalogo/vehiculo', sim.idVehiculo]" style="cursor: pointer;" title="Haz clic para ver el vehículo">{{ sim.modelo?.marca?.nombreMarca }} {{ sim.modelo?.modelo }}</h4>
+                    <div class="similar-price-row">
+                      <div class="similar-price">
+                        <strong>S/ {{ sim.precioDia }}</strong>
+                        <small>/día</small>
+                      </div>
+                      <a mat-stroked-button class="btn-ver-similar" [routerLink]="['/catalogo/vehiculo', sim.idVehiculo]">
+                        Ver auto
+                      </a>
+                    </div>
+                  </div>
+                </article>
+              }
+            </div>
+          </section>
+        }
+      </div>
+
+      <aside class="col-sidebar" style="position: static !important; top: auto !important;">
+        <div class="reserva-card-sticky" style="position: static !important; top: auto !important;">
+          <div class="reserva-card-header">
+            <mat-icon>calendar_month</mat-icon>
+            <h2>Formulario de Reserva</h2>
+          </div>
+
+          <div class="reserva-card-body">
+            <div class="sedes-group-detail">
+              <label class="form-field">
+                <span class="field-label"><mat-icon class="field-mini-icon">storefront</mat-icon> Sede de entrega</span>
+                <select
+                  class="select-input-detail"
+                  [ngModel]="sedeRecojo()"
+                  (ngModelChange)="onSedeRecojoChange($event)"
+                >
+                  <option value="MIRAFLORES">Miraflores - Av. 28 de Julio 489</option>
+                  <option value="AEROPUERTO">Aeropuerto Internacional Jorge Chávez</option>
+                </select>
+                <small class="sede-detail-schedule">
+                  {{ sedeRecojo() === 'AEROPUERTO' ? 'Atención las 24 horas' : 'Lun-Vie 08:30-18:00, Sáb 09:00-17:00' }}
+                </small>
+              </label>
+
+              <label class="form-field">
+                <span class="field-label"><mat-icon class="field-mini-icon">replay</mat-icon> Sede de devolución</span>
+                <select
+                  class="select-input-detail"
+                  [ngModel]="sedeDevolucion()"
+                  (ngModelChange)="onSedeDevolucionChange($event)"
+                >
+                  <option value="MIRAFLORES">Miraflores - Av. 28 de Julio 489</option>
+                  <option value="AEROPUERTO">Aeropuerto Internacional Jorge Chávez</option>
+                </select>
+                <small class="sede-detail-schedule">
+                  {{ sedeDevolucion() === 'AEROPUERTO' ? 'Atención las 24 horas' : 'Lun-Vie 08:30-18:00, Sáb 09:00-17:00' }}
+                </small>
+              </label>
+            </div>
+            <div class="fechas-group">
+              <div class="datetime-col-detail">
+                <span class="field-label" (click)="pickerEntrega.open()" style="cursor: pointer;">
+                  <mat-icon class="field-mini-icon">event</mat-icon> Fecha y Hora de Entrega
+                </span>
+                <div class="datetime-inputs">
+                  <div class="custom-date-box" (click)="pickerEntrega.open()">
+                    <input
+                      type="text"
+                      id="fechaEntrega"
+                      [matDatepicker]="pickerEntrega"
+                      [matDatepickerFilter]="filtroFechasEntrega"
+                      [min]="minFechaEntregaDate()"
+                      [value]="fechaEntregaDate()"
+                      (dateChange)="onFechaEntregaMatChange($event)"
+                      class="form-input date-input custom-date-picker-input"
+                      readonly
+                      placeholder="DD/MM/AAAA"
+                    />
+                    <button
+                      type="button"
+                      class="btn-picker-icon"
+                      (click)="$event.stopPropagation(); pickerEntrega.open()"
+                      aria-label="Abrir calendario"
+                    >
+                      <mat-icon>calendar_month</mat-icon>
+                    </button>
+                    <mat-datepicker #pickerEntrega panelClass="paulcars-calendar-panel" yPosition="below"></mat-datepicker>
+                  </div>
+
+                  <div class="custom-dropdown time-dropdown-box" (click)="$event.stopPropagation()">
+                    <button
+                      type="button"
+                      id="btn-hora-entrega"
+                      class="custom-dropdown-trigger time-trigger"
+                      [class.is-open]="dropdownAbierto() === 'entregaHora'"
+                      [class.no-turns]="horasRecojo().length === 0"
+                      (click)="toggleDropdown('entregaHora', $event)"
+                      aria-label="Hora de entrega"
+                    >
+                      <span class="dropdown-selected-value time-val" [class.text-muted]="horasRecojo().length === 0">
+                        @if (horasRecojo().length === 0) {
+                          {{ esDomingo(fechaEntrega()) && sedeRecojo() === 'MIRAFLORES' ? 'Cerrado' : 'Sin turnos' }}
+                        } @else {
+                          {{ horaEntrega() }}
+                        }
+                      </span>
+                      <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'entregaHora' ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </button>
+
+                    @if (dropdownAbierto() === 'entregaHora') {
+                      <ul class="custom-dropdown-menu time-menu" role="listbox">
+                        @if (horasRecojo().length === 0) {
+                          <li class="dropdown-empty-item">
+                            <mat-icon class="icon-empty">event_busy</mat-icon>
+                            <div class="empty-info">
+                              @if (esDomingo(fechaEntrega()) && sedeRecojo() === 'MIRAFLORES') {
+                                <strong>Sede Miraflores cerrada</strong>
+                                <small>No hay atención los domingos</small>
+                              } @else if (fechaEntrega() === hoyStr) {
+                                <strong>Sin turnos hoy</strong>
+                                <small>Los turnos de hoy ya concluyeron</small>
+                              } @else {
+                                <strong>No disponible</strong>
+                                <small>No hay turnos para esta fecha</small>
+                              }
+                            </div>
+                          </li>
+                        } @else {
+                          @for (h of horasRecojo(); track h) {
+                            <li
+                              class="custom-dropdown-item time-item"
+                              role="option"
+                              [class.selected]="horaEntrega() === h"
+                              (click)="seleccionarHoraEntrega(h, $event)"
+                            >
+                              {{ h }}
+                            </li>
+                          }
+                        }
+                      </ul>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div class="datetime-col-detail">
+                <span class="field-label" (click)="pickerDevolucion.open()" style="cursor: pointer;">
+                  <mat-icon class="field-mini-icon">event_available</mat-icon> Fecha y Hora de Devolución
+                </span>
+                <div class="datetime-inputs">
+                  <div class="custom-date-box" (click)="pickerDevolucion.open()">
+                    <input
+                      type="text"
+                      id="fechaDevolucion"
+                      [matDatepicker]="pickerDevolucion"
+                      [matDatepickerFilter]="filtroFechasDevolucion"
+                      [min]="minFechaDevolucionDate()"
+                      [value]="fechaDevolucionDate()"
+                      (dateChange)="onFechaDevolucionMatChange($event)"
+                      class="form-input date-input custom-date-picker-input"
+                      readonly
+                      placeholder="DD/MM/AAAA"
+                    />
+                    <button
+                      type="button"
+                      class="btn-picker-icon"
+                      (click)="$event.stopPropagation(); pickerDevolucion.open()"
+                      aria-label="Abrir calendario"
+                    >
+                      <mat-icon>calendar_month</mat-icon>
+                    </button>
+                    <mat-datepicker #pickerDevolucion panelClass="paulcars-calendar-panel" yPosition="below"></mat-datepicker>
+                  </div>
+
+                  <div class="custom-dropdown time-dropdown-box" (click)="$event.stopPropagation()">
+                    <button
+                      type="button"
+                      id="btn-hora-devolucion"
+                      class="custom-dropdown-trigger time-trigger"
+                      [class.is-open]="dropdownAbierto() === 'devolucionHora'"
+                      [class.no-turns]="horasDevolucion().length === 0"
+                      (click)="toggleDropdown('devolucionHora', $event)"
+                      aria-label="Hora de devolución"
+                    >
+                      <span class="dropdown-selected-value time-val" [class.text-muted]="horasDevolucion().length === 0">
+                        @if (horasDevolucion().length === 0) {
+                          {{ esDomingo(fechaDevolucion()) && sedeDevolucion() === 'MIRAFLORES' ? 'Cerrado' : 'Sin turnos' }}
+                        } @else {
+                          {{ horaDevolucion() }}
+                        }
+                      </span>
+                      <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'devolucionHora' ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </button>
+
+                    @if (dropdownAbierto() === 'devolucionHora') {
+                      <ul class="custom-dropdown-menu time-menu" role="listbox">
+                        @if (horasDevolucion().length === 0) {
+                          <li class="dropdown-empty-item">
+                            <mat-icon class="icon-empty">event_busy</mat-icon>
+                            <div class="empty-info">
+                              @if (esDomingo(fechaDevolucion()) && sedeDevolucion() === 'MIRAFLORES') {
+                                <strong>Sede Miraflores cerrada</strong>
+                                <small>No hay atención los domingos</small>
+                              } @else {
+                                <strong>No disponible</strong>
+                                <small>No hay turnos para esta fecha</small>
+                              }
+                            </div>
+                          </li>
+                        } @else {
+                          @for (h of horasDevolucion(); track h) {
+                            <li
+                              class="custom-dropdown-item time-item"
+                              role="option"
+                              [class.selected]="horaDevolucion() === h"
+                              (click)="seleccionarHoraDevolucion(h, $event)"
+                            >
+                              {{ h }}
+                            </li>
+                          }
+                        }
+                      </ul>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            @if (errorHorario()) {
+              <div class="alerta-horario-detalle">
+                <mat-icon>warning</mat-icon>
+                <span>{{ errorHorario() }}</span>
+              </div>
+            }
+
+            <div class="extras-section">
+              <span class="extras-title">Servicios adicionales:</span>
+
+              <label class="extra-checkbox-row">
+                <input
+                  type="checkbox"
+                  [ngModel]="extraSeguro()"
+                  (ngModelChange)="extraSeguro.set($event)"
+                />
+                <div class="extra-desc">
+                  <strong>Seguro Todo Riesgo</strong>
+                  <span class="extra-price">S/ {{ TARIFA_SEGURO_DIA | number:'1.2-2' }} / Día</span>
+                </div>
+              </label>
+
+              <label class="extra-checkbox-row">
+                <input
+                  type="checkbox"
+                  [ngModel]="extraConductor()"
+                  (ngModelChange)="extraConductor.set($event)"
+                />
+                <div class="extra-desc">
+                  <strong>Conductor adicional</strong>
+                  <span class="extra-price">S/ {{ TARIFA_CONDUCTOR_DIA | number:'1.2-2' }} / Día</span>
+                </div>
+              </label>
+
+              <label class="extra-checkbox-row">
+                <input
+                  type="checkbox"
+                  [ngModel]="extraSilla()"
+                  (ngModelChange)="extraSilla.set($event)"
+                />
+                <div class="extra-desc">
+                  <strong>Silla para bebé</strong>
+                  <span class="extra-price">S/ {{ TARIFA_SILLA_DIA | number:'1.2-2' }} / Día</span>
+                </div>
+              </label>
+            </div>
+
+            <div class="cost-summary-box">
+              <div class="summary-line">
+                <span>Duración total:</span>
+                <strong>{{ periodoCalculado().horasTotales }} horas</strong>
+              </div>
+
+              <div class="summary-line">
+                <span>ALQUILER({{ diasCalculados() }}):</span>
+                <strong>{{ diasCalculados() }} {{ diasCalculados() === 1 ? 'día' : 'días' }}</strong>
+              </div>
+
+              <div class="summary-line">
+                <span>Tarifa vehículo:</span>
+                <span>S/ {{ subtotalVehiculo() | number:'1.2-2' }}</span>
+              </div>
+
+              @if (totalExtras() > 0) {
+                <div class="summary-line text-accent">
+                  <span>Servicios adicionales:</span>
+                  <span>+ S/ {{ totalExtras() | number:'1.2-2' }}</span>
+                </div>
+              }
+
+              <div class="summary-divider"></div>
+
+              <div class="total-line">
+                <span class="total-label">Total Estimado:</span>
+                <span class="total-amount">S/ {{ granTotal() | number:'1.2-2' }}</span>
+              </div>
+            </div>
+
+            <div class="actions-group">
+              @if (vehiculo()?.estado?.nombreEstado === 'DISPONIBLE' && (vehiculo()?.unidadesDisponibles ?? 0) > 0) {
+                <button
+                  mat-flat-button
+                  type="button"
+                  class="btn-iniciar-reserva"
+                  (click)="iniciarReserva()"
+                  [disabled]="!!errorHorario()"
+                >
+                  <mat-icon>calendar_today</mat-icon>
+                  Iniciar Reserva
+                </button>
+              } @else {
+                <button mat-flat-button class="btn-iniciar-reserva btn-disabled-status" disabled>
+                  <mat-icon>lock_clock</mat-icon>
+                  Vehículo no disponible
+                </button>
+              }
+            </div>
+
+            <div class="whatsapp-support-box">
+              <span>¿Tienes consultas previas?</span>
+              <a href="https://wa.me/51959137712?text=Hola%20Paul%20Cars,%20deseo%20consultar%20sobre%20el%20vehiculo%20{{ vehiculo()?.modelo?.marca?.nombreMarca }}%20{{ vehiculo()?.modelo?.modelo }}" target="_blank" rel="noopener" class="whatsapp-link">
+                <mat-icon>chat</mat-icon>
+                Atención vía WhatsApp 24/7
+              </a>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  }
+</section>

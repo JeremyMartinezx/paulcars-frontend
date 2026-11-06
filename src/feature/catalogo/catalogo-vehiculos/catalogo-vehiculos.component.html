@@ -1,0 +1,190 @@
+<section class="catalogo-page">
+  <div class="catalogo-header">
+    <div class="catalogo-header-main">
+      <h1>Catálogo de Vehículos</h1>
+      <p class="catalogo-subtitle">Elige el vehículo ideal para tu próximo viaje con disponibilidad inmediata.</p>
+    </div>
+  </div>
+
+  <div class="catalogo-sticky-controls">
+    <div class="filtros-toolbar" id="grid-vehiculos-top">
+      <div class="filtro-busqueda-box">
+        <mat-icon class="search-icon">search</mat-icon>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Buscar marca o modelo..."
+          [ngModel]="terminoBusqueda()"
+          (input)="buscar($any($event.target).value)"
+          aria-label="Buscar vehículo por marca o modelo"
+        />
+        @if (terminoBusqueda()) {
+          <button type="button" class="btn-clear-search" (click)="buscar('')" matTooltip="Limpiar búsqueda" aria-label="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </div>
+
+      <div class="filtro-item">
+        <label for="filtroSedeSelect">
+          <mat-icon>place</mat-icon>
+          <span>Sede:</span>
+        </label>
+        <select
+          id="filtroSedeSelect"
+          [ngModel]="sedeFiltro()"
+          (ngModelChange)="filtrarPorSede($event)"
+          class="filtro-select select-sede"
+        >
+          <option value="TODAS">Todas las Sedes</option>
+          <option value="MIRAFLORES">Miraflores - Av. 28 de Julio</option>
+          <option value="AEROPUERTO">Aeropuerto Internacional Jorge Chávez</option>
+        </select>
+      </div>
+      <div class="filtro-item">
+        <label for="filtroTipoSelect">
+          <mat-icon>directions_car</mat-icon>
+          <span>Categoría:</span>
+        </label>
+        <select
+          id="filtroTipoSelect"
+          [ngModel]="filtroTipo()"
+          (ngModelChange)="filtrarPorTipo($event)"
+          class="filtro-select"
+        >
+          @for (tipo of tipos(); track tipo) {
+            <option [value]="tipo">{{ tipo === 'TODOS' ? 'Todas las categorías' : tipo }}</option>
+          }
+        </select>
+      </div>
+      <div class="toolbar-paginacion">
+        <span class="toolbar-conteo">
+          @if (totalPaginas() > 1) {
+            <strong>{{ vehiculosPaginados().length }}</strong> de <strong>{{ totalVehiculos() }}</strong> vehículos
+          } @else {
+            <strong>{{ totalVehiculos() }}</strong> vehículos
+          }
+        </span>
+
+        @if (totalPaginas() > 1) {
+          <div class="paginacion-mini">
+            <button
+              mat-icon-button
+              type="button"
+              class="btn-nav-mini"
+              (click)="paginaAnterior()"
+              [disabled]="paginaActual() === 1"
+              matTooltip="Página anterior"
+              aria-label="Página anterior"
+            >
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+
+            <span class="pagina-num-mini">{{ paginaActual() }} / {{ totalPaginas() }}</span>
+
+            <button
+              mat-icon-button
+              type="button"
+              class="btn-nav-mini"
+              (click)="paginaSiguiente()"
+              [disabled]="paginaActual() === totalPaginas()"
+              matTooltip="Página siguiente"
+              aria-label="Página siguiente"
+            >
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="vehiculos-grid">
+    @for (vehiculo of vehiculosPaginados(); track vehiculo.idVehiculo) {
+      <article class="vehiculo-card" [class.card-no-disponible]="vehiculo.estado?.nombreEstado !== 'DISPONIBLE'">
+        <div class="vehiculo-imagen" [routerLink]="['/catalogo/vehiculo', vehiculo.idVehiculo]" [queryParams]="queryParamsParaVehiculo(vehiculo.idVehiculo!)" style="cursor: pointer;" title="Haz clic para ver el detalle completo del vehículo">
+          @let imgUrl = obtenerImagenVehiculo(vehiculo);
+          @if (imgUrl) {
+            <img [src]="imgUrl" [alt]="(vehiculo.modelo?.marca?.nombreMarca || '') + ' ' + (vehiculo.modelo?.modelo || '')" (error)="$any($event.target).src = '/images/vehiculos/corolla.jpg'" loading="lazy" decoding="async" />
+          } @else {
+            <div class="icono-placeholder">
+              <mat-icon>directions_car</mat-icon>
+            </div>
+          }
+          <span class="tipo-badge">{{ vehiculo.tipo?.nombreTipo }}</span>
+        </div>
+
+        <div class="vehiculo-info">
+          <div class="vehiculo-header-info">
+            <h2 [routerLink]="['/catalogo/vehiculo', vehiculo.idVehiculo]" [queryParams]="queryParamsParaVehiculo(vehiculo.idVehiculo!)" style="cursor: pointer;" title="Ver detalle del vehículo">
+              {{ vehiculo.modelo?.marca?.nombreMarca }} {{ vehiculo.modelo?.modelo }}
+            </h2>
+            <div class="specs-pills">
+              <span class="spec-pill">
+                <mat-icon class="mini-icon">location_on</mat-icon>
+                {{ vehiculo.sede === 'AEROPUERTO' ? 'Aeropuerto (24/7)' : 'Miraflores' }}
+              </span>
+              <span class="specs-dot">&bull;</span>
+              <span class="spec-pill">
+                <mat-icon class="mini-icon">calendar_today</mat-icon>
+                {{ vehiculo.anio }}
+              </span>
+              <span class="specs-dot">&bull;</span>
+              <span class="spec-pill">
+                <mat-icon class="mini-icon">local_gas_station</mat-icon>
+                {{ vehiculo.combustible?.nombreCombustible || 'Gasolina' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <div class="precio-section">
+              <div class="precio-valor-box">
+                <span class="precio-simbolo">S/</span>
+                <span class="precio-monto">{{ vehiculo.precioDia }}</span>
+                <span class="precio-frecuencia">/día</span>
+              </div>
+            </div>
+
+            <div class="card-actions-grid">
+              <a mat-stroked-button class="btn-ver-detalle" [routerLink]="['/catalogo/vehiculo', vehiculo.idVehiculo]" [queryParams]="queryParamsParaVehiculo(vehiculo.idVehiculo!)">
+                <mat-icon>visibility</mat-icon>
+                <span>Detalle</span>
+              </a>
+
+              @if ((vehiculo.unidadesDisponibles ?? 1) > 0 && vehiculo.estado?.nombreEstado !== 'NO DISPONIBLE' && vehiculo.estado?.nombreEstado !== 'MANTENIMIENTO') {
+                <a mat-flat-button class="btn-reservar" [routerLink]="['/reservar']" [queryParams]="queryParamsParaVehiculo(vehiculo.idVehiculo!)">
+                  <mat-icon>calendar_month</mat-icon>
+                  <span>Reservar</span>
+                </a>
+              } @else {
+                <button mat-stroked-button class="btn-no-disponible btn-alquilado" disabled>
+                  <mat-icon>block</mat-icon>
+                  <span>Sin unidades</span>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </article>
+    }
+
+    @if (vehiculosPublicos().length === 0) {
+      <div class="empty-state">
+        <mat-icon>directions_car_filled</mat-icon>
+        @if (terminoBusqueda()) {
+          <h3>No se encontraron vehículos para "{{ terminoBusqueda() }}"</h3>
+          <p>Prueba buscando con otra marca o modelo, o restablece los filtros para ver la flota completa.</p>
+        } @else {
+          <h3>No se encontraron vehículos disponibles con los filtros seleccionados</h3>
+          <p>Prueba cambiando de sede o categoría para explorar todos los modelos disponibles.</p>
+        }
+        <button mat-stroked-button (click)="limpiarFiltroBusqueda()">
+          <mat-icon>refresh</mat-icon>
+          <span>Restablecer filtros</span>
+        </button>
+      </div>
+    }
+  </div>
+
+</section>
