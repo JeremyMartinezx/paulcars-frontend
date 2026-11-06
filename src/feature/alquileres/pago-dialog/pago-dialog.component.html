@@ -1,0 +1,243 @@
+<header class="modal-header">
+  <div class="modal-header-left">
+    <div class="modal-header-icon">
+      <mat-icon>{{ esDeuda ? 'paid' : 'key' }}</mat-icon>
+    </div>
+    <div class="modal-header-text">
+      <h2 mat-dialog-title class="titulo">
+        {{ esDeuda ? 'Pago de Deuda por Liquidación' : 'Registrar Pago y Entrega de Llaves' }}
+      </h2>
+      <div class="subtitulo">
+      <span class="codigo-alquiler">{{ formatearCodigoAlquiler(data.alquiler.idAlquiler) }}</span>
+      <span class="sep">&bull;</span>
+      <span>{{ nombreVehiculo() }}</span>
+      <span class="sep">&bull;</span>
+      <span>{{ data.alquiler.cliente?.nombres }} {{ data.alquiler.cliente?.apellidos }}</span>
+    </div>
+    </div>
+  </div>
+  <button mat-icon-button type="button" class="btn-cerrar" (click)="cancelar()" aria-label="Cerrar">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<mat-dialog-content class="dialog-content">
+  <div class="rental-summary-box">
+    <div class="summary-row">
+      <span class="label">Referencia:</span>
+      <strong class="value font-mono">{{ formatearCodigoAlquiler(data.alquiler.idAlquiler) }}</strong>
+    </div>
+
+    <div class="summary-row">
+      <span class="label">Cliente:</span>
+      <strong class="value">{{ data.alquiler.cliente?.nombres }} {{ data.alquiler.cliente?.apellidos }} (DNI: {{ data.alquiler.cliente?.numeroDocumento }})</strong>
+    </div>
+
+    <div class="summary-row">
+      <span class="label">Vehículo:</span>
+      <strong class="value">{{ data.alquiler.vehiculo?.modelo?.marca?.nombreMarca }} {{ data.alquiler.vehiculo?.modelo?.modelo }} &bull; <span class="placa-pill">{{ data.alquiler.vehiculo?.placa }}</span> ({{ categoriaVehiculo }})</strong>
+    </div>
+
+    <div class="summary-row">
+      <span class="label">Periodo:</span>
+      <span class="value">{{ data.alquiler.fechaInicio }} &rarr; {{ data.alquiler.fechaFinEstimada }} ({{ diasCalculados }} {{ diasCalculados === 1 ? 'día' : 'días' }} &times; S/ {{ data.alquiler.vehiculo?.precioDia }}/día)</span>
+    </div>
+
+    @if (data.alquiler.serviciosExtras && data.alquiler.serviciosExtras !== 'Ninguno') {
+      <div class="summary-row">
+        <span class="label">Extras:</span>
+        <span class="value">{{ data.alquiler.serviciosExtras }}</span>
+      </div>
+    }
+
+    <div class="summary-row total-highlight">
+      <span class="label">{{ esDeuda ? 'Deuda pendiente del check-out:' : 'Total a cobrar en counter:' }}</span>
+      <strong class="value total-amount">
+        {{ cargandoSaldo ? 'Calculando...' : ('S/ ' + (totalSugerido | number:'1.2-2')) }}
+      </strong>
+    </div>
+  </div>
+
+  @if (error) {
+    <div class="error-banner">
+      <mat-icon>error</mat-icon>
+      <span>{{ error }}</span>
+    </div>
+  }
+
+  <form [formGroup]="form" class="pago-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Método de pago con el que cancela el cliente</mat-label>
+      <mat-select
+        formControlName="idMetodoPago"
+        (selectionChange)="cambiarMetodo($event.value)"
+      >
+        <mat-select-trigger>
+          @if (metodoSeleccionado(); as met) {
+            <span class="metodo-trigger-view">
+              <mat-icon class="trigger-icon">{{ met.icono }}</mat-icon>
+              <span class="trigger-text">{{ met.nombre }}</span>
+            </span>
+          }
+        </mat-select-trigger>
+
+        @for (metodo of metodosPago; track metodo.id) {
+          <mat-option [value]="metodo.id">
+            <div class="metodo-option-item">
+              <mat-icon class="option-icon">{{ metodo.icono }}</mat-icon>
+              <strong class="option-name">{{ metodo.nombre }}</strong>
+            </div>
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <!-- El saldo a cobrar se visualiza directamente en el encabezado resumen para agilizar la operación en counter -->
+
+    @if (metodoSeleccionado().tipo === 'pos') {
+      <div class="datos-metodo">
+        <mat-form-field appearance="outline">
+          <mat-label>Últimos 4 dígitos</mat-label>
+          <input
+            matInput
+            formControlName="ultimosDigitos"
+            maxlength="4"
+            inputmode="numeric"
+            placeholder="0000"
+            (input)="onSoloNumeros('ultimosDigitos', $event, 4)"
+          >
+          @if (form.controls.ultimosDigitos.invalid && form.controls.ultimosDigitos.touched) {
+            <mat-error>Ingresa exactamente 4 dígitos.</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>N.° de operación del voucher</mat-label>
+          <input
+            matInput
+            formControlName="numeroOperacion"
+            maxlength="6"
+            inputmode="numeric"
+            placeholder="000000"
+            (input)="onSoloNumeros('numeroOperacion', $event, 6)"
+          >
+          @if (form.controls.numeroOperacion.invalid && form.controls.numeroOperacion.touched) {
+            <mat-error>Ingresa los 6 dígitos del voucher.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    }
+
+    @if (metodoSeleccionado().tipo === 'yape') {
+      <div class="datos-metodo">
+        <mat-form-field appearance="outline">
+          <mat-label>Billetera de origen</mat-label>
+          <mat-select formControlName="bancoOrigen">
+            <mat-option value="YAPE">Yape</mat-option>
+            <mat-option value="PLIN">Plin</mat-option>
+          </mat-select>
+          @if (form.controls.bancoOrigen.invalid && form.controls.bancoOrigen.touched) {
+            <mat-error>Selecciona la billetera.</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Código de operación</mat-label>
+          <input
+            matInput
+            formControlName="numeroOperacion"
+            maxlength="8"
+            inputmode="numeric"
+            placeholder="00000000"
+            (input)="onSoloNumeros('numeroOperacion', $event, 8)"
+          >
+          @if (form.controls.numeroOperacion.invalid && form.controls.numeroOperacion.touched) {
+            <mat-error>Ingresa los 8 dígitos del código.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    }
+
+    @if (metodoSeleccionado().tipo === 'transferencia') {
+      <div class="datos-metodo">
+        <mat-form-field appearance="outline">
+          <mat-label>Banco de origen</mat-label>
+          <mat-select formControlName="bancoOrigen">
+            <mat-option value="BCP">BCP</mat-option>
+            <mat-option value="BBVA">BBVA</mat-option>
+            <mat-option value="INTERBANK">Interbank</mat-option>
+            <mat-option value="SCOTIABANK">Scotiabank</mat-option>
+            <mat-option value="BANCO DE LA NACION">Banco de la Nación</mat-option>
+            <mat-option value="BANBIF">BanBif</mat-option>
+            <mat-option value="PICHINCHA">Banco Pichincha</mat-option>
+          </mat-select>
+          @if (form.controls.bancoOrigen.invalid && form.controls.bancoOrigen.touched) {
+            <mat-error>Selecciona el banco de origen.</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Código de operación</mat-label>
+          <input
+            matInput
+            formControlName="numeroOperacion"
+            maxlength="10"
+            inputmode="numeric"
+            placeholder="0000000000"
+            (input)="onSoloNumeros('numeroOperacion', $event, 10)"
+          >
+          @if (form.controls.numeroOperacion.invalid && form.controls.numeroOperacion.touched) {
+            <mat-error>Ingresa el código de operación.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    }
+
+    @if (metodoSeleccionado().tipo === 'efectivo') {
+      <div class="efectivo-box">
+        <div class="efectivo-row">
+          <mat-form-field appearance="outline" class="input-recibido">
+            <mat-label>Efectivo recibido del cliente (S/)</mat-label>
+            <input
+              matInput
+              type="number"
+              formControlName="montoRecibido"
+              (input)="onRecibidoInput($event)"
+            >
+            <span matTextPrefix>S/&nbsp;</span>
+          </mat-form-field>
+
+          <div class="vuelto-badge-container">
+            @if (vueltoCalculado() > 0) {
+              <div class="vuelto-pill">
+                <span class="vuelto-lbl">Vuelto a entregar:</span>
+                <strong class="vuelto-val">S/ {{ vueltoCalculado() | number:'1.2-2' }}</strong>
+              </div>
+            } @else if (faltaEfectivo() === 0) {
+              <div class="vuelto-pill exacto">
+                <mat-icon>check_circle</mat-icon>
+                <span>Monto exacto (sin vuelto)</span>
+              </div>
+            } @else {
+              <div class="vuelto-pill incompleto">
+                <mat-icon>error_outline</mat-icon>
+                <span>Faltan S/ {{ faltaEfectivo() | number:'1.2-2' }}. No se puede registrar.</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button type="button" class="btn-cancelar" (click)="cancelar()" [disabled]="cargando">Cancelar</button>
+  <button
+    mat-flat-button
+    type="button"
+    class="btn-confirmar-pago"
+    (click)="confirmar()"
+    [disabled]="cargando || cargandoSaldo || form.invalid || efectivoInsuficiente || totalSugerido <= 0"
+  >
+    <mat-icon>{{ esDeuda ? 'paid' : 'key' }}</mat-icon>
+    {{ cargando ? 'Registrando...' : (esDeuda ? 'Registrar Pago de Deuda' : 'Confirmar Pago y Entregar Llaves') }}
+  </button>
+</mat-dialog-actions>

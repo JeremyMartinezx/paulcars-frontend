@@ -1,0 +1,184 @@
+/* ===== HEADER CORPORATIVO LIMPIO (ESTILO PAUL CAR'S) ===== */
+.modal-header {
+  padding: 16px 22px 14px;
+  background: #ffffff;
+  color: #0d1b3e;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-header-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: #0d1b3e;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.modal-header-icon mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  color: #ffffff;
+  display: block;
+}
+
+.modal-header-icon.danger {
+  background: #0d1b3e;
+  border: none;
+}
+
+.modal-header-icon.danger mat-icon {
+  color: #ffffff;
+}
+
+.titulo {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  color: #0d1b3e !important;
+  letter-spacing: -0.01em;
+  line-height: 1.2 !important;
+}
+
+.subtitulo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.84rem !important;
+  color: #64748b !important;
+  font-weight: 500 !important;
+  padding-left: 0 !important;
+  margin: 0 !important;
+}
+
+.subtitulo span {
+  color: #64748b !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+}
+
+.codigo-alquiler {
+  font-family: inherit !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+}
+
+.sep {
+  color: #cbd5e1 !important;
+}
+
+.btn-cerrar {
+  color: #64748b !important;
+  transition: color 0.15s;
+}
+
+.btn-cerrar:hover {
+  color: #0d1b3e !important;
+}
+
+/* ===== CONTENIDO ===== */
+.pc-dialog-body {
+  padding: 12px 24px 18px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ayuda {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  padding-bottom: 2px;
+}
+
+.motivos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.radio-icono {
+  color: #0d1b3e;
+  flex-shrink: 0;
+}
+
+.error {
+  color: #b91c1c;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ===== ACCIONES FOOTER ===== */
+.pc-actions {
+  padding: 12px 22px 16px !important;
+  border-top: 1px solid #f1f5f9;
+  gap: 12px;
+  background: #ffffff;
+}
+
+.btn-cancelar {
+  background: #ffffff !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+  height: 40px !important;
+  padding: 0 18px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-cancelar:hover {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border-color: #94a3b8 !important;
+}
+
+.btn-desestimar {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  height: 40px !important;
+  padding: 0 20px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25) !important;
+  border: none !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-desestimar:hover {
+  background: #b91c1c !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35) !important;
+  transform: translateY(-1px) !important;
+}

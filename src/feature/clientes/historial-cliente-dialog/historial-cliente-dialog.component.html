@@ -1,0 +1,136 @@
+<div class="historial-dialog">
+  <div class="dialog-header">
+    <div class="header-left">
+      <div class="dialog-icon-circle">
+        <mat-icon>history</mat-icon>
+      </div>
+      <div class="dialog-header-text">
+        <h2 mat-dialog-title class="dialog-title">Historial de alquileres</h2>
+        <span class="dialog-subtitle">
+        <strong class="cliente-nombre">{{ data.cliente.nombres }} {{ data.cliente.apellidos }}</strong>
+        <span class="sep">&bull;</span>
+        <span>DNI: {{ data.cliente.numeroDocumento || '—' }}</span>
+        <span class="sep">&bull;</span>
+        <span>Licencia: {{ data.cliente.licenciaConducir || '—' }}</span>
+      </span>
+      </div>
+    </div>
+    <button mat-icon-button (click)="cerrar()" class="btn-close-header" aria-label="Cerrar modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content class="modal-content">
+    
+    @if (alquileres() === null) {
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <span>Cargando historial de alquileres...</span>
+      </div>
+    } @else if (alquileres()!.length === 0) {
+      <div class="empty-state-box">
+        <div class="empty-icon-circle">
+          <mat-icon>history_toggle_off</mat-icon>
+        </div>
+        <div class="empty-text">
+          <h4>Sin historial de alquileres</h4>
+          <p>El cliente aún no registra alquileres ni reservas previas en el sistema.</p>
+        </div>
+      </div>
+    } @else {
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="historial-table">
+            <thead>
+              <tr>
+                <th class="col-vehiculo">Vehículo</th>
+                <th class="col-fechas">Periodo</th>
+                <th class="col-estado">Estado</th>
+                <th class="col-monto">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of alquileresPaginados(); track a.idAlquiler) {
+                <tr>
+                  <td class="col-vehiculo">
+                    <strong class="veh-nombre">{{ a.vehiculo.modelo?.marca?.nombreMarca }} {{ a.vehiculo.modelo?.modelo }}</strong>
+                  </td>
+                  <td class="col-fechas">
+                    <div class="fechas-wrapper">
+                      <span class="f-inicio">{{ a.fechaInicio }}</span>
+                      <span class="f-flecha">&rarr;</span>
+                      <span class="f-fin">{{ a.fechaFinEstimada }}</span>
+                    </div>
+                  </td>
+                  <td class="col-estado">
+                    <span class="badge-estado" [ngClass]="claseEstado(a.estado.nombreEstado)">
+                      {{ etiquetaEstado(a.estado.nombreEstado) }}
+                    </span>
+                  </td>
+                  <td class="col-monto monto-total">S/ {{ (a.precioTotal ?? 0) | number:'1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación compacta con flechitas para que no se expanda hacia abajo -->
+        @if ((alquileres()?.length ?? 0) > 0) {
+          <div class="paginacion-barra">
+            <div class="paginacion-info">
+              Mostrando <strong>{{ rangoInicio() }}-{{ rangoFin() }}</strong> de <strong>{{ alquileres()?.length }}</strong> alquileres
+            </div>
+
+            @if (totalPaginas() > 1) {
+              <div class="paginacion-controles">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="btn-flecha"
+                  (click)="paginaAnterior()"
+                  [disabled]="paginaActual() === 1"
+                  matTooltip="Página anterior"
+                >
+                  <mat-icon>chevron_left</mat-icon>
+                  <span>Anterior</span>
+                </button>
+
+                <div class="paginas-pills">
+                  @for (p of paginasArray(); track p) {
+                    <button
+                      type="button"
+                      class="pagina-pill"
+                      [class.activa]="p === paginaActual()"
+                      (click)="irAPagina(p)"
+                    >
+                      {{ p }}
+                    </button>
+                  }
+                </div>
+
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="btn-flecha"
+                  (click)="paginaSiguiente()"
+                  [disabled]="paginaActual() === totalPaginas()"
+                  matTooltip="Página siguiente"
+                >
+                  <span>Siguiente</span>
+                  <mat-icon>chevron_right</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-flat-button class="btn-cerrar" type="button" (click)="cerrar()">
+      <mat-icon>check</mat-icon>
+      <span>Cerrar</span>
+    </button>
+  </mat-dialog-actions>
+</div>

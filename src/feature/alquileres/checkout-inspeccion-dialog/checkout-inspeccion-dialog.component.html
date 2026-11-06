@@ -1,0 +1,59 @@
+<header class="modal-header">
+  <div class="modal-header-left">
+    <div class="modal-header-icon">
+      <mat-icon>vpn_key</mat-icon>
+    </div>
+    <div class="modal-header-text">
+      <h2 mat-dialog-title class="titulo">Recepción de Llaves</h2>
+      <div class="subtitulo">
+        <span>{{ formatearCodigoAlquiler(alquiler.idAlquiler) }}</span>
+        <span class="sep">&bull;</span>
+        <span>{{ nombreVehiculo() }}</span>
+      </div>
+    </div>
+  </div>
+  <button mat-icon-button type="button" class="btn-cerrar" (click)="cancelar()" aria-label="Cerrar">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<mat-dialog-content class="dialog-content">
+  <div class="message-card">
+    <p class="dialog-prompt">¿Deseas confirmar la recepción de llaves y retorno del vehículo?</p>
+    <ul class="dialog-detalles">
+      <li>Cliente: {{ clienteNombre() }}</li>
+      <li>
+        Vehículo: {{ modeloVehiculo() }}
+        @if (placaVehiculo()) {
+          <span> (Placa: {{ placaVehiculo() }})</span>
+        }
+      </li>
+      <li>Garantía: Retención liberada tras recepción conforme</li>
+    </ul>
+    <p class="dialog-nota">
+      El vehículo pasará a estado disponible y el contrato quedará finalizado.
+    </p>
+  </div>
+
+  @if (error) {
+    <div class="alerta-error">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ error }}</span>
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button type="button" class="btn-cancelar" (click)="cancelar()" [disabled]="enviando">
+    Cancelar
+  </button>
+  <button mat-flat-button type="button" class="btn-confirmar" (click)="confirmar()" [disabled]="enviando">
+    @if (enviando) {
+      <mat-icon class="spin-icon">hourglass_top</mat-icon>
+      <span>Registrando...</span>
+    } @else {
+      <mat-icon>check</mat-icon>
+      <span>Confirmar recepción</span>
+    }
+  </button>
+</mat-dialog-actions>

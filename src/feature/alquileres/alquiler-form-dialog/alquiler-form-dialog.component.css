@@ -1,0 +1,985 @@
+.alquiler-dialog {
+  width: 100%;
+  max-width: 660px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========================================================================= */
+/* HEADER COMPACTO Y DISCRETO                                                */
+/* ========================================================================= */
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dialog-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #0d1b3e;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.dialog-icon-circle mat-icon {
+  font-size: 21px;
+  width: 21px;
+  height: 21px;
+  display: block;
+  color: #ffffff;
+}
+
+.dialog-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dialog-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #0d1b3e;
+  font-size: 1.08rem;
+  font-weight: 800;
+  line-height: 1.2 !important;
+}
+
+.dialog-subtitle {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1.25 !important;
+}
+
+.btn-cerrar-modal {
+  color: #94a3b8 !important;
+  transition: color 0.15s ease;
+}
+
+.btn-cerrar-modal:hover {
+  color: #0f172a !important;
+}
+
+/* ========================================================================= */
+/* CONTENIDO DEL MODAL                                                       */
+/* ========================================================================= */
+.modal-body {
+  padding: 14px 22px 10px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 78vh;
+  overflow-y: auto;
+}
+
+/* ========================================================================= */
+/* SECCIONES, LABELS E ICONOS OFICIALES PAUL CAR'S                           */
+/* ========================================================================= */
+.seccion-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.seccion-grupo.z-dropdown {
+  z-index: 60;
+}
+
+.seccion-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.seccion-titulo {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #0d1b3c;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pc-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #0d1b3c;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pc-field-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: #1565c0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-nuevo-cliente {
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #0d1b3c;
+  border-radius: 7px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.btn-nuevo-cliente mat-icon {
+  font-size: 15px;
+  width: 15px;
+  height: 15px;
+  color: #1565c0;
+}
+
+.btn-nuevo-cliente:hover {
+  background: #f8fafc;
+  border-color: #0d1b3c;
+}
+
+/* ========================================================================= */
+/* SISTEMA DE DROPDOWNS Y BUSCADOR PAUL CAR'S (IDÉNTICO A HOME)              */
+/* ========================================================================= */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+/* Buscador de cliente con lupa perfectamente centrada */
+.pc-search-box {
+  width: 100%;
+  box-sizing: border-box;
+  height: 42px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: text;
+  transition: all 0.2s ease;
+}
+
+.pc-search-box:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.pc-search-box.is-open,
+.pc-search-box:focus-within {
+  border-color: #0d1b3c;
+  box-shadow: 0 0 0 3px rgba(13, 27, 60, 0.12);
+  background: #ffffff;
+}
+
+.pc-search-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: #1565c0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pc-search-input {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #0d1b3c;
+  line-height: 42px;
+}
+
+.pc-search-input::placeholder {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.btn-clear-input {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  margin: 0;
+  border-radius: 50%;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-clear-input mat-icon {
+  font-size: 17px;
+  width: 17px;
+  height: 17px;
+}
+
+.btn-clear-input:hover {
+  background: #f1f5f9;
+  color: #0d1b3c;
+}
+
+/* Trigger de selección (Vehículo, Sedes, Horas) */
+.custom-dropdown-trigger {
+  width: 100%;
+  box-sizing: border-box;
+  height: 42px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #0d1b3c;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.custom-dropdown-trigger:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.custom-dropdown-trigger.is-open,
+.custom-dropdown-trigger:focus {
+  border-color: #0d1b3c;
+  box-shadow: 0 0 0 3px rgba(13, 27, 60, 0.12);
+  background: #ffffff;
+}
+
+.dropdown-selected-value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.dropdown-selected-value.text-muted {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dropdown-chevron {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: #0d1b3c;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.custom-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px) !important;
+  bottom: auto !important;
+  left: 0;
+  width: 100%;
+  min-width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1.5px solid #0d1b3c;
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(13, 27, 60, 0.25);
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+  z-index: 1200;
+  max-height: 230px;
+  overflow-y: auto;
+  animation: slideDropdownDown 0.15s ease-out;
+}
+
+@keyframes slideDropdownDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.custom-dropdown-item {
+  padding: 10px 14px;
+  font-size: 0.84rem;
+  color: #0d1b3c;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.custom-dropdown-item:hover {
+  background: #0d1b3c;
+  color: #ffffff;
+}
+
+.custom-dropdown-item:hover .item-schedule {
+  color: #f6c343;
+}
+
+.custom-dropdown-item.selected {
+  background: #eff6ff;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.custom-dropdown-item.selected:hover {
+  background: #0d1b3c;
+  color: #ffffff;
+}
+
+.custom-dropdown-item.selected:hover .item-schedule {
+  color: #f6c343;
+}
+
+.custom-dropdown-item.disabled {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  background: #f8fafc !important;
+  color: #64748b !important;
+}
+
+.custom-dropdown-item.disabled:hover {
+  background: #f8fafc !important;
+  color: #64748b !important;
+}
+
+.item-incompleto {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.item-name {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-schedule {
+  font-size: 0.76rem;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Sedes dentro del modal: nombre arriba y horario abajo para que nunca se corte */
+.branch-item-col {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+}
+
+.dropdown-empty-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff1f2;
+  color: #9f1239;
+  user-select: none;
+}
+
+.icon-empty {
+  color: #e11d48;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.empty-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.empty-info strong {
+  font-size: 0.8rem;
+  color: #9f1239;
+  font-weight: 800;
+}
+
+.empty-info small {
+  font-size: 0.72rem;
+  color: #be123c;
+  font-weight: 500;
+}
+
+/* ========================================================================= */
+/* CLIENTE RESUMEN SELECCIONADO                                              */
+/* ========================================================================= */
+.cliente-resumen-discreto {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 7px 12px;
+}
+
+.cli-info-linea {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #475569;
+  flex-wrap: wrap;
+}
+
+.cli-nombre {
+  color: #0d1b3c;
+  font-weight: 700;
+}
+
+.cli-separador {
+  color: #cbd5e1;
+}
+
+/* ========================================================================= */
+/* VEHÍCULO SELECCIONADO (PREVIEW COMPACTO)                                  */
+/* ========================================================================= */
+.vehiculo-card-visual {
+  display: flex;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 8px 12px;
+  align-items: center;
+}
+
+.vehiculo-foto-box {
+  width: 94px;
+  height: 58px;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  background: #f8fafc;
+  flex-shrink: 0;
+  border: 1px solid #f1f5f9;
+}
+
+.vehiculo-foto-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tipo-chip {
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  font-size: 0.56rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+.vehiculo-meta-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.meta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.meta-nombre {
+  font-size: 0.88rem;
+  color: #0d1b3c;
+  font-weight: 800;
+}
+
+.meta-tarifa {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #002f6c;
+}
+
+.meta-tarifa small {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.meta-specs-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.meta-specs-row strong {
+  color: #0d1b3c;
+}
+
+.meta-sep {
+  color: #cbd5e1;
+}
+
+/* ========================================================================= */
+/* ITINERARIO (ENTREGA Y DEVOLUCIÓN EN PARALELO CON ESTILO PAUL CAR'S)       */
+/* ========================================================================= */
+.itinerario-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.itinerario-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: visible;
+  min-width: 0;
+}
+
+.itinerario-card.dropdown-activo {
+  z-index: 50;
+}
+
+.itinerario-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 6px;
+}
+
+.itinerario-card-titulo {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #0d1b3c;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.itinerario-card-sub {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.itinerario-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.campo-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.datetime-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.custom-date-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1.35;
+  min-width: 124px;
+  cursor: pointer;
+}
+
+.date-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 42px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 34px 6px 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #0d1b3c;
+  background: #ffffff;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.date-input:focus,
+.custom-date-box:hover .date-input {
+  border-color: #0d1b3c;
+}
+
+.btn-picker-icon {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1565c0;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-picker-icon mat-icon {
+  font-size: 19px;
+  width: 19px;
+  height: 19px;
+}
+
+.btn-picker-icon:hover {
+  background: rgba(21, 101, 192, 0.1);
+  color: #0d1b3c;
+}
+
+.time-dropdown-box {
+  flex: 1;
+  min-width: 86px;
+  position: relative;
+}
+
+.time-trigger {
+  padding: 0 8px;
+  justify-content: center;
+  gap: 4px;
+}
+
+.time-val {
+  text-align: center;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.time-menu {
+  min-width: 100%;
+  max-height: 200px;
+}
+
+.time-item {
+  justify-content: center;
+  text-align: center;
+  font-weight: 700;
+  padding: 8px 12px;
+  font-size: 0.86rem;
+}
+
+.time-trigger.no-turns {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.time-val.text-muted {
+  color: #dc2626 !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.error-banner mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+/* ========================================================================= */
+/* SERVICIOS ADICIONALES (EXTRAS COMPACTOS)                                  */
+/* ========================================================================= */
+.extras-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.extra-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 10px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.extra-item:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.extra-activo {
+  border-color: #0d1b3c;
+  background: #f8fafc;
+}
+
+.extra-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.extra-nombre {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0d1b3c;
+  line-height: 1.2;
+}
+
+.extra-tarifa {
+  font-size: 0.71rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* ========================================================================= */
+/* RESUMEN Y TOTAL GENERAL                                                   */
+/* ========================================================================= */
+.total-card {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resumen-desglose {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.resumen-linea {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.resumen-concepto {
+  font-weight: 500;
+}
+
+.resumen-valor {
+  color: #0d1b3c;
+  font-weight: 700;
+}
+
+.total-separador {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 2px 0;
+}
+
+.total-fila-final {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-titulo {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #0d1b3c;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.total-subtexto {
+  display: block;
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.total-monto {
+  font-size: 1.18rem;
+  font-weight: 900;
+  color: #002f6c;
+  line-height: 1;
+}
+
+.total-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  font-size: 0.78rem;
+  padding: 2px 0;
+}
+
+.total-placeholder mat-icon {
+  font-size: 17px;
+  width: 17px;
+  height: 17px;
+  color: #94a3b8;
+}
+
+/* ========================================================================= */
+/* ACCIONES                                                                  */
+/* ========================================================================= */
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 22px 14px !important;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn-cancelar {
+  border: 1.5px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-radius: 8px !important;
+  height: 38px !important;
+  font-weight: 600 !important;
+  font-size: 0.82rem !important;
+  padding: 0 18px !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-cancelar:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.btn-registrar {
+  background: #0d1b3e !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
+  border-radius: 8px !important;
+  padding: 0 20px !important;
+  height: 38px !important;
+  box-shadow: 0 2px 6px rgba(13, 27, 62, 0.15) !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-registrar:disabled {
+  opacity: 0.45 !important;
+  box-shadow: none !important;
+}
+
+.error-msg {
+  color: #dc2626;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+/* ========================================================================= */
+/* RESPONSIVO                                                                */
+/* ========================================================================= */
+@media (max-width: 640px) {
+  .itinerario-grid,
+  .extras-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vehiculo-card-visual {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .vehiculo-foto-box {
+    width: 100%;
+    height: 110px;
+  }
+}

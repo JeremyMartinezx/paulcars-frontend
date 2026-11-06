@@ -1,0 +1,296 @@
+:host {
+  display: block;
+  background: #ffffff;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.comprobante-dialog {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+/* ========================================================================= */
+/* HEADER COMPACTO                                                           */
+/* ========================================================================= */
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+}
+
+.dialog-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #0d1b3e;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.dialog-icon-circle mat-icon {
+  font-size: 21px;
+  width: 21px;
+  height: 21px;
+  display: block;
+  color: #ffffff;
+}
+
+.dialog-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dialog-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #0d1b3e;
+  font-size: 1.06rem;
+  font-weight: 800;
+  line-height: 1.2 !important;
+}
+
+.dialog-subtitle {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1.25 !important;
+}
+
+.btn-cerrar-modal {
+  color: #94a3b8 !important;
+  transition: color 0.15s ease;
+}
+
+.btn-cerrar-modal:hover {
+  color: #0f172a !important;
+}
+
+/* ========================================================================= */
+/* CUERPO DEL DOCUMENTO                                                      */
+/* ========================================================================= */
+.modal-body {
+  padding: 12px 20px 8px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 76vh;
+  overflow-y: auto;
+}
+
+/* Tira de metadatos */
+.meta-strip {
+  display: grid;
+  grid-template-columns: 0.9fr 1fr 1.25fr;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meta-lbl {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
+}
+
+.meta-val {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.meta-val.pago-ok {
+  color: #15803d;
+}
+
+.meta-val.pago-pend {
+  color: #b45309;
+}
+
+/* Secciones */
+.seccion-comprobante {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seccion-cabecera {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 5px;
+}
+
+.sec-titulo {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #0d1b3c;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.info-label {
+  font-size: 0.67rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.info-valor {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.info-sub {
+  font-size: 0.74rem;
+  color: #475569;
+  line-height: 1.25;
+}
+
+/* Desglose Económico */
+.desglose-card {
+  background: #f8fafc;
+}
+
+.lineas-desglose {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.linea-desglose {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #334155;
+  gap: 8px;
+}
+
+.concepto {
+  font-weight: 500;
+}
+
+.monto {
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.linea-cargo {
+  color: #dc2626;
+}
+
+.linea-cargo .monto {
+  color: #dc2626;
+}
+
+.separador-total {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 3px 0;
+}
+
+.linea-total-final {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.total-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0d1b3c;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: block;
+}
+
+.total-sub {
+  font-size: 0.68rem;
+  color: #64748b;
+  display: block;
+  line-height: 1.2;
+}
+
+.total-precio {
+  font-size: 1.22rem;
+  font-weight: 900;
+  color: #002f6c;
+  white-space: nowrap;
+}
+
+/* ========================================================================= */
+/* ACCIONES                                                                  */
+/* ========================================================================= */
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 20px 14px !important;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+}
+
+.btn-cancelar {
+  border: 1.5px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-radius: 8px !important;
+  height: 36px !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  padding: 0 16px !important;
+}
+
+@media (max-width: 580px) {
+  .meta-strip,
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}

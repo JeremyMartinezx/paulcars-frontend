@@ -1,0 +1,56 @@
+<header class="modal-header">
+  <div class="modal-header-left">
+    <div class="modal-header-icon danger">
+      <mat-icon>gpp_bad</mat-icon>
+    </div>
+    <div class="modal-header-text">
+      <h2 mat-dialog-title class="titulo">Desestimar Solicitud de Reserva</h2>
+      <div class="subtitulo">
+        <span class="codigo-alquiler">{{ formatearCodigoAlquiler(data.alquiler.idAlquiler) }}</span>
+        <span class="sep">&bull;</span>
+        <span>{{ data.alquiler.vehiculo?.modelo?.marca?.nombreMarca }} {{ data.alquiler.vehiculo?.modelo?.modelo }}</span>
+        <span class="sep">&bull;</span>
+        <span>{{ data.alquiler.cliente?.nombres }} {{ data.alquiler.cliente?.apellidos }}</span>
+      </div>
+    </div>
+  </div>
+  <button mat-icon-button type="button" class="btn-cerrar" (click)="cancelar()" aria-label="Cerrar">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<mat-dialog-content class="pc-dialog-body">
+  <p class="ayuda">Selecciona la causal formal correspondiente. Se notificará formalmente al cliente por correo institucional.</p>
+
+  <div class="motivos">
+    @for (m of motivos; track m.valor) {
+      <div
+        class="pc-option-card"
+        [class.activo]="motivoSeleccionado() === m.valor"
+        (click)="seleccionar(m.valor)"
+        role="radio"
+        [attr.aria-checked]="motivoSeleccionado() === m.valor"
+        tabindex="0"
+        (keydown.enter)="seleccionar(m.valor)"
+      >
+        <mat-icon class="radio-icono">
+          {{ motivoSeleccionado() === m.valor ? 'radio_button_checked' : 'radio_button_unchecked' }}
+        </mat-icon>
+        <div>
+          <strong>{{ m.titulo }}</strong>
+          <small>{{ m.detalle }}</small>
+        </div>
+      </div>
+    }
+  </div>
+  @if (intentoEnviar && !motivoSeleccionado()) {
+    <span class="error">Debes elegir una causal formal.</span>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="pc-actions">
+  <button mat-button type="button" class="btn-cancelar" (click)="cancelar()">Volver</button>
+  <button mat-flat-button type="button" class="btn-desestimar" (click)="confirmar()">
+    Desestimar y notificar al cliente
+  </button>
+</mat-dialog-actions>

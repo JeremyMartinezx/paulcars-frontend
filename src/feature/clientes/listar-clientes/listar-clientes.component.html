@@ -1,0 +1,153 @@
+<section class="page">
+  <app-back-button></app-back-button>
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Base de clientes</p>
+      <h1>Clientes</h1>
+      <p class="description">Registra nuevos clientes y consulta su información de contacto.</p>
+    </div>
+
+    <button mat-flat-button color="primary" (click)="abrirNuevo()">
+      <mat-icon>person_add</mat-icon>
+      Nuevo cliente
+    </button>
+  </div>
+
+  <div class="toolbar">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Buscar por nombre, DNI o correo</mat-label>
+      <input matInput (input)="buscar($any($event.target).value)" placeholder="Ej: Marjhorick, 71234567">
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    </div>
+
+  <div class="table-card">
+    <table mat-table [dataSource]="clientesPaginados()">
+      <ng-container matColumnDef="cliente">
+        <th mat-header-cell *matHeaderCellDef>Cliente</th>
+        <td mat-cell *matCellDef="let c">
+          <div class="cliente-cell">
+            <span class="avatar">{{ iniciales(c) }}</span>
+            <div class="cliente-info">
+              <div class="cliente-nombre-row">
+                <strong class="cliente-nombre">{{ nombreCompleto(c) }}</strong>
+              </div>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="documento">
+        <th mat-header-cell *matHeaderCellDef>DNI</th>
+        <td mat-cell *matCellDef="let c">
+          @if (esDocumentoFaltante(c)) {
+            <span class="badge-faltante">Faltante</span>
+          } @else {
+            <span class="doc-numero">{{ c.numeroDocumento }}</span>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="contacto">
+        <th mat-header-cell *matHeaderCellDef>Contacto</th>
+        <td mat-cell *matCellDef="let c">
+          <div>{{ c.email }}</div>
+          <div class="secundario">{{ c.telefono && c.telefono !== '000000000' ? c.telefono : '-' }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="licencia">
+        <th mat-header-cell *matHeaderCellDef>Licencia de conducir</th>
+        <td mat-cell *matCellDef="let c">
+          @if (!c.licenciaConducir || c.licenciaConducir === '000000000') {
+            <span class="badge-faltante">Faltante</span>
+          } @else {
+            <span>{{ c.licenciaConducir }}</span>
+          }
+        </td>
+      </ng-container>
+
+      
+
+      <ng-container matColumnDef="acciones">
+        <th mat-header-cell *matHeaderCellDef class="acciones-header">Acciones</th>
+        <td mat-cell *matCellDef="let c" class="acciones-cell">
+          <div class="acciones-contenedor">
+            <button mat-icon-button matTooltip="Ver historial de alquileres" (click)="verHistorial(c)">
+              <mat-icon>history</mat-icon>
+            </button>
+            
+            @if (esAdmin()) {
+              <button mat-icon-button matTooltip="Editar ficha completa" (click)="editar(c)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button matTooltip="Eliminar cliente" (click)="eliminar(c)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+      <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
+    </table>
+
+    @if (clientesFiltrados().length > 0) {
+      <div class="paginacion-barra">
+        <div class="paginacion-info">
+          Mostrando <strong>{{ rangoInicio() }}-{{ rangoFin() }}</strong> de <strong>{{ clientesFiltrados().length }}</strong> clientes
+        </div>
+
+        @if (totalPaginas() > 1) {
+          <div class="paginacion-controles">
+            <button
+              mat-stroked-button
+              type="button"
+              class="btn-flecha"
+              (click)="paginaAnterior()"
+              [disabled]="paginaActual() === 1"
+              matTooltip="Página anterior"
+            >
+              <mat-icon>chevron_left</mat-icon>
+              <span>Anterior</span>
+            </button>
+
+            <div class="paginas-pills">
+              @for (p of paginasArray(); track p) {
+                <button
+                  type="button"
+                  class="pagina-pill"
+                  [class.activa]="p === paginaActual()"
+                  (click)="irAPagina(p)"
+                >
+                  {{ p }}
+                </button>
+              }
+            </div>
+
+            <button
+              mat-stroked-button
+              type="button"
+              class="btn-flecha"
+              (click)="paginaSiguiente()"
+              [disabled]="paginaActual() === totalPaginas()"
+              matTooltip="Página siguiente"
+            >
+              <span>Siguiente</span>
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    @if (clientesFiltrados().length === 0) {
+      <div class="empty-state">
+        <mat-icon>group_off</mat-icon>
+        <p>No se encontraron clientes con esa búsqueda o filtro seleccionado.</p>
+      </div>
+    }
+  </div>
+</section>

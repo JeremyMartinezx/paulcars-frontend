@@ -1,0 +1,536 @@
+<section class="page">
+  <app-back-button></app-back-button>
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Contratos</p>
+      <h1>Alquileres</h1>
+      <p class="description">Aprueba solicitudes, registra alquileres en counter, cobra y recibe vehículos con inspección técnica.</p>
+    </div>
+
+    <button mat-flat-button color="primary" (click)="abrirNuevo()">
+      <mat-icon>add_circle</mat-icon>
+      Nuevo alquiler
+    </button>
+  </div>
+
+  <!-- Panel de Indicadores Operativos Generales para el Asesor -->
+  <div class="smart-advisor-panel">
+    <!-- 1. Solicitudes por atender -->
+    <div
+      class="advisor-kpi-card kpi-solicitudes-pendientes"
+      [class.kpi-card-activa]="filtroEstado() === 'PENDIENTE'"
+      (click)="filtrarPorEstado('PENDIENTE')"
+    >
+      <div class="kpi-icon-wrap ic-wrap-pendiente">
+        <mat-icon>pending_actions</mat-icon>
+      </div>
+      <div class="kpi-body">
+        <span class="kpi-titulo">Solicitudes por Atender</span>
+        <div class="kpi-val-row">
+          <strong class="kpi-numero">{{ solicitudesPendientes().length }}</strong>
+          <span class="kpi-detalle">en espera de aprobación</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Reservas Confirmadas -->
+    <div
+      class="advisor-kpi-card kpi-reservas-general"
+      [class.kpi-card-activa]="filtroEstado() === 'RESERVADO'"
+      (click)="filtrarPorEstado('RESERVADO')"
+    >
+      <div class="kpi-icon-wrap ic-wrap-reserva">
+        <mat-icon>bookmark_added</mat-icon>
+      </div>
+      <div class="kpi-body">
+        <span class="kpi-titulo">Reservas Confirmadas</span>
+        <div class="kpi-val-row">
+          <strong class="kpi-numero">{{ conteoReservasGeneral() }}</strong>
+          <span class="kpi-detalle">listas para counter / entrega</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Vehículos en Ruta -->
+    <div
+      class="advisor-kpi-card kpi-en-ruta-general"
+      [class.kpi-card-activa]="filtroEstado() === 'ACTIVO'"
+      (click)="filtrarPorEstado('ACTIVO')"
+    >
+      <div class="kpi-icon-wrap ic-wrap-activo">
+        <mat-icon>directions_car</mat-icon>
+      </div>
+      <div class="kpi-body">
+        <span class="kpi-titulo">Vehículos en Ruta</span>
+        <div class="kpi-val-row">
+          <strong class="kpi-numero">{{ conteoEnRutaGeneral() }}</strong>
+          <span class="kpi-detalle">unidades en circulación</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Contratos Finalizados -->
+    <div
+      class="advisor-kpi-card kpi-finalizados-general"
+      [class.kpi-card-activa]="filtroEstado() === 'FINALIZADO'"
+      (click)="filtrarPorEstado('FINALIZADO')"
+    >
+      <div class="kpi-icon-wrap ic-wrap-finalizado">
+        <mat-icon>fact_check</mat-icon>
+      </div>
+      <div class="kpi-body">
+        <span class="kpi-titulo">Contratos Finalizados</span>
+        <div class="kpi-val-row">
+          <strong class="kpi-numero">{{ conteoFinalizadosGeneral() }}</strong>
+          <span class="kpi-detalle">liquidaciones aprobadas</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar-alquileres-row">
+    <div class="busqueda-orden-bar">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Buscar por cliente o vehículo</mat-label>
+        <input matInput (input)="buscar($any($event.target).value)" placeholder="Ej: Juan, Toyota Yaris">
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+    </div>
+
+    <div class="filtros-alquileres-grupo">
+      <button
+        type="button"
+        mat-stroked-button
+        class="filtro-btn btn-hoy-destacado"
+        [class.activo]="filtroFecha() !== 'TODAS'"
+        [matMenuTriggerFor]="menuFechas"
+        matTooltip="Filtrar por fecha: Hoy, atrasados o calendario"
+      >
+        <mat-icon class="btn-ic-hoy">event</mat-icon>
+        <span>{{ labelFiltroFecha() }}</span>
+        <mat-icon class="ic-dropdown">arrow_drop_down</mat-icon>
+      </button>
+
+      <mat-menu #menuFechas="matMenu" class="menu-orden-panel" xPosition="after">
+        <div class="menu-grupo-header">FILTRAR OPERACIONES POR FECHA</div>
+        <button mat-menu-item (click)="seleccionarFechaFiltro('HOY')" [class.opcion-seleccionada]="filtroFecha() === 'HOY'">
+          <mat-icon class="item-check">{{ filtroFecha() === 'HOY' ? 'check' : '' }}</mat-icon>
+          <mat-icon>today</mat-icon>
+          <span>Hoy ({{ fechaHoyLegible() }})</span>
+        </button>
+        <button mat-menu-item (click)="seleccionarFechaFiltro('ATRASADAS')" [class.opcion-seleccionada]="filtroFecha() === 'ATRASADAS'">
+          <mat-icon class="item-check">{{ filtroFecha() === 'ATRASADAS' ? 'check' : '' }}</mat-icon>
+          <mat-icon [style.color]="'#dc2626'">warning</mat-icon>
+          <span>Pendientes atrasados</span>
+          @if (operacionesAtrasadas().length > 0) {
+            <span class="chip-cnt chip-deuda">({{ operacionesAtrasadas().length }})</span>
+          }
+        </button>
+        <div class="menu-calendar-input-box" (click)="$event.stopPropagation()">
+          <label class="lbl-cal-input">Elegir fecha del calendario:</label>
+          <input
+            type="date"
+            class="input-fecha-calendario"
+            [value]="fechaPersonalizada()"
+            (change)="onFechaCalendarioChange($event)"
+          >
+        </div>
+        @if (filtroFecha() !== 'TODAS') {
+          <mat-divider></mat-divider>
+          <button mat-menu-item (click)="seleccionarFechaFiltro('TODAS')">
+            <mat-icon>clear</mat-icon>
+            <span>Ver todas las fechas</span>
+          </button>
+        }
+      </mat-menu>
+
+      <button
+        type="button"
+        mat-stroked-button
+        class="filtro-btn"
+        [class.activo]="filtroEstado() === 'TODOS'"
+        (click)="filtrarPorEstado('TODOS')"
+        matTooltip="Ver todos los alquileres"
+      >
+        <span>Todos</span>
+        <span class="chip-cnt">({{ conteoEstado('TODOS') }})</span>
+      </button>
+
+      <button
+        type="button"
+        mat-stroked-button
+        class="filtro-btn"
+        [class.activo]="filtroEstado() === 'PENDIENTE'"
+        (click)="filtrarPorEstado('PENDIENTE')"
+        matTooltip="Solicitudes pendientes de evaluación"
+      >
+        <span>Solicitudes</span>
+        <span class="chip-cnt">({{ conteoEstado('PENDIENTE') }})</span>
+      </button>
+
+      <button
+        type="button"
+        mat-stroked-button
+        class="filtro-btn"
+        [class.activo]="filtroEstado() === 'RESERVADO'"
+        (click)="filtrarPorEstado('RESERVADO')"
+        matTooltip="Todas las reservas confirmadas (por cobrar o pagadas)"
+      >
+        <span>Reservas</span>
+        <span class="chip-cnt">({{ conteoEstado('RESERVADO') }})</span>
+      </button>
+
+      <button
+        type="button"
+        mat-stroked-button
+        class="filtro-btn"
+        [class.activo]="filtroEstado() === 'ACTIVO'"
+        (click)="filtrarPorEstado('ACTIVO')"
+        matTooltip="Vehículos actualmente en ruta"
+      >
+        <span>En ruta</span>
+        <span class="chip-cnt">({{ conteoEstado('ACTIVO') }})</span>
+      </button>
+
+      <button
+        type="button"
+        mat-stroked-button
+        class="filtro-btn"
+        [class.activo]="filtroEstado() === 'FINALIZADO'"
+        (click)="filtrarPorEstado('FINALIZADO')"
+        matTooltip="Alquileres finalizados con check-out aprobado"
+      >
+        <span>Finalizados</span>
+        <span class="chip-cnt">({{ conteoFinalizadasTotal() }})</span>
+      </button>
+    </div>
+
+    @if (filtroEstado() === 'RESERVADO') {
+      <div class="subfiltros-reservas-row">
+        <span class="subfiltro-label">
+          <mat-icon class="subfiltro-icon">tune</mat-icon>
+          Estado de reserva:
+        </span>
+        <button
+          type="button"
+          class="subfiltro-pill"
+          [class.activo]="subfiltroReserva() === 'TODAS'"
+          (click)="cambiarSubfiltroReserva('TODAS')"
+        >
+          <span>Todas</span>
+          <span class="pill-cnt">({{ conteoEstado('RESERVADO') }})</span>
+        </button>
+        <button
+          type="button"
+          class="subfiltro-pill subfiltro-pagado"
+          [class.activo]="subfiltroReserva() === 'PAGADAS'"
+          (click)="cambiarSubfiltroReserva('PAGADAS')"
+        >
+          <mat-icon class="pill-ic">verified</mat-icon>
+          <span>Reservado pagado</span>
+          <span class="pill-cnt">({{ conteoReservasPagadas() }})</span>
+        </button>
+        <button
+          type="button"
+          class="subfiltro-pill subfiltro-pend"
+          [class.activo]="subfiltroReserva() === 'POR_PAGAR' || subfiltroReserva() === 'PENDIENTES'"
+          (click)="cambiarSubfiltroReserva('POR_PAGAR')"
+        >
+          <mat-icon class="pill-ic">schedule</mat-icon>
+          <span>Reservado por pagar</span>
+          <span class="pill-cnt">({{ conteoReservasPorPagar() }})</span>
+        </button>
+      </div>
+    }
+
+
+  </div>
+
+  <div class="table-card">
+    <table mat-table [dataSource]="alquileresPaginados()" [class.sin-accion]="filtroEstado() === 'FINALIZADO'">
+      <!-- CLIENTE -->
+      <ng-container matColumnDef="cliente">
+        <th mat-header-cell *matHeaderCellDef>CLIENTE</th>
+        <td mat-cell *matCellDef="let a">
+          <div class="cliente-cell-stack">
+            <span class="cliente-nombre-row">{{ a.cliente?.nombres }} {{ a.cliente?.apellidos }}</span>
+            <span class="ref-contrato-text">{{ formatearCodigoAlquiler(a.idAlquiler) }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- VEHÍCULO -->
+      <ng-container matColumnDef="vehiculo">
+        <th mat-header-cell *matHeaderCellDef>VEHÍCULO</th>
+        <td mat-cell *matCellDef="let a">
+          <div class="vehiculo-cell">
+            <img
+              [src]="imagenVehiculo(a)"
+              [alt]="nombreVehiculo(a)"
+              class="vehiculo-thumb"
+            />
+            <div class="vehiculo-text">
+              <strong class="vehiculo-nombre">{{ nombreVehiculo(a) }}</strong>
+              <span class="categoria-label">{{ a.vehiculo?.tipo?.nombreTipo || 'Sedán' }}</span>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- PERIODO -->
+      <ng-container matColumnDef="fechas">
+        <th mat-header-cell *matHeaderCellDef>PERIODO</th>
+        <td mat-cell *matCellDef="let a">
+          <div class="periodo-asesor-cell">
+            <div class="periodo-linea">
+              <mat-icon class="ic-periodo">event</mat-icon>
+              <strong class="fecha-txt">{{ a.fechaInicio }}</strong>
+              <span class="hora-badge">{{ a.horaRecojo || '10:00' }} hrs</span>
+            </div>
+            <div class="periodo-linea sub">
+              <mat-icon class="ic-periodo">event_repeat</mat-icon>
+              <span class="fecha-txt">{{ a.fechaFinEstimada }}</span>
+              <span class="hora-badge sub">{{ a.horaDevolucion || '18:00' }} hrs</span>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- ESTADO -->
+      <ng-container matColumnDef="estado">
+        <th mat-header-cell *matHeaderCellDef class="col-centrada">ESTADO</th>
+        <td mat-cell *matCellDef="let a" class="col-centrada">
+          @let est = (a.estado?.nombreEstado || '').toUpperCase();
+          <div class="estado-cell-wrapper">
+            @if (est === 'PENDIENTE') {
+              <span class="badge-estado badge-pendiente">Pendiente</span>
+            } @else if (est === 'RESERVADO' || est === 'APROBADO' || est === 'PAGADO' || est === 'CONFIRMADO') {
+              @if (esReservaPagada(a)) {
+                <span class="badge-estado badge-reservado-pagado">Reservado &bull; Pagado</span>
+              } @else {
+                <span class="badge-estado badge-reservado-por-pagar">Reservado &bull; Por pagar</span>
+              }
+            } @else if (est === 'PAGO_EN_REVISION') {
+              <span class="badge-estado badge-revision">Pago en revisión</span>
+            } @else if (est === 'ACTIVO' || est === 'EN_CURSO' || est === 'EN CURSO') {
+              <span class="badge-estado badge-en-ruta">En ruta</span>
+            } @else if (esFinalizadoTotal(a)) {
+              <span class="badge-estado badge-finalizado">Finalizado</span>
+            } @else if (est === 'CANCELADO' || est === 'RECHAZADO') {
+              <span class="badge-estado badge-cancelado" [matTooltip]="est === 'RECHAZADO' ? motivoLegible(a.motivoRechazo) : ''">Cancelado</span>
+            } @else {
+              <span class="badge-estado badge-finalizado">{{ etiquetaEstado(a.estado?.nombreEstado) }}</span>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- ACCIÓN -->
+      <ng-container matColumnDef="accion">
+        <th mat-header-cell *matHeaderCellDef class="acciones-header col-centrada" style="min-width: 185px;">ACCIÓN</th>
+        <td mat-cell *matCellDef="let a" class="acciones-cell col-centrada">
+          @let est = (a.estado?.nombreEstado || '').toUpperCase();
+          <div class="acciones-wrapper">
+            @switch (est) {
+              @case ('PENDIENTE') {
+                <button
+                  type="button"
+                  class="btn-tabla-accion btn-tabla-aprobar"
+                  (click)="aprobar(a)"
+                >
+                  <mat-icon class="btn-ic">fact_check</mat-icon>
+                  <span>Aprobar</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-tabla-accion btn-tabla-cancelar"
+                  (click)="rechazar(a)"
+                >
+                  <mat-icon class="btn-ic">close</mat-icon>
+                  <span>Rechazar</span>
+                </button>
+              }
+              @case ('RESERVADO') {
+                @if (!esReservaPagada(a)) {
+                  <button
+                    type="button"
+                    class="btn-tabla-accion btn-tabla-pagar"
+                    (click)="abrirPago(a)"
+                  >
+                    <mat-icon class="btn-ic">payments</mat-icon>
+                    <span>Cobrar</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-tabla-accion btn-tabla-cancelar"
+                    (click)="rechazar(a)"
+                  >
+                    <mat-icon class="btn-ic">close</mat-icon>
+                    <span>Rechazar</span>
+                  </button>
+                } @else {
+                  @if (esFechaFutura(a.fechaInicio)) {
+                    <button
+                      type="button"
+                      class="btn-tabla-accion btn-tabla-bloqueado"
+                      (click)="entregarLlaves(a)"
+                    >
+                      <mat-icon class="btn-ic">lock_clock</mat-icon>
+                      <span>Bloqueado</span>
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn-tabla-accion btn-tabla-entregar"
+                      (click)="entregarLlaves(a)"
+                    >
+                      <mat-icon class="btn-ic">key</mat-icon>
+                      <span>Entregar</span>
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="btn-tabla-accion btn-tabla-cancelar"
+                    (click)="rechazar(a)"
+                  >
+                    <mat-icon class="btn-ic">close</mat-icon>
+                    <span>Rechazar</span>
+                  </button>
+                }
+              }
+              @case ('PAGADO') {
+                @if (esFechaFutura(a.fechaInicio)) {
+                  <button
+                    type="button"
+                    class="btn-tabla-accion btn-tabla-bloqueado"
+                    (click)="entregarLlaves(a)"
+                  >
+                    <mat-icon class="btn-ic">lock_clock</mat-icon>
+                    <span>Bloqueado</span>
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn-tabla-accion btn-tabla-entregar"
+                    (click)="entregarLlaves(a)"
+                  >
+                    <mat-icon class="btn-ic">key</mat-icon>
+                    <span>Entregar</span>
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="btn-tabla-accion btn-tabla-cancelar"
+                  (click)="rechazar(a)"
+                >
+                  <mat-icon class="btn-ic">close</mat-icon>
+                  <span>Rechazar</span>
+                </button>
+              }
+              @case ('ACTIVO') {
+                <button
+                  type="button"
+                  class="btn-tabla-accion btn-tabla-recepcion"
+                  (click)="abrirCheckout(a)"
+                >
+                  <mat-icon class="btn-ic">vpn_key</mat-icon>
+                  <span>Recibir llaves</span>
+                </button>
+              }
+              @case ('CERRADO_CON_DEUDA') {
+                <span class="tabla-vacio-dash">&mdash;</span>
+              }
+              @default {
+                <span class="tabla-vacio-dash">&mdash;</span>
+              }
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- COMPROBANTE -->
+      <ng-container matColumnDef="comprobante">
+        <th mat-header-cell *matHeaderCellDef class="col-centrada" style="min-width: 125px;">COMPROBANTE</th>
+        <td mat-cell *matCellDef="let a" class="col-centrada">
+          @let est = (a.estado?.nombreEstado || '').toUpperCase();
+          @let pagado = esReservaPagada(a) || est === 'PAGADO' || est === 'CONFIRMADO' || est === 'ACTIVO' || est === 'EN_CURSO' || est === 'EN CURSO' || est === 'FINALIZADO';
+          @if (est === 'CANCELADO' || est === 'RECHAZADO' || est === 'CANCELADO_SIN_STOCK' || est === 'RECHAZADO_DOCUMENTACION') {
+            <span class="tabla-vacio-dash">&mdash;</span>
+          } @else {
+            <button
+              type="button"
+              class="btn-tabla-comprobante"
+              (click)="consultarActa(a)"
+            >
+              <mat-icon class="btn-ic">
+                {{ est === 'PENDIENTE' ? 'description' : (!pagado ? 'event_note' : 'receipt_long') }}
+              </mat-icon>
+              <span>
+                {{ est === 'PENDIENTE' ? 'Solicitud' : (!pagado ? 'Reserva' : 'Ver') }}
+              </span>
+            </button>
+          }
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnas()"></tr>
+      <tr mat-row *matRowDef="let row; columns: columnas();"></tr>
+    </table>
+
+    @if (alquileresFiltrados().length > 0) {
+      <div class="paginacion-barra">
+        <div class="paginacion-info">
+          Mostrando <strong>{{ rangoInicio() }}-{{ rangoFin() }}</strong> de <strong>{{ alquileresFiltrados().length }}</strong> alquileres
+        </div>
+
+        @if (totalPaginas() > 1) {
+          <div class="paginacion-controles">
+            <button
+              mat-stroked-button
+              type="button"
+              class="btn-flecha"
+              (click)="paginaAnterior()"
+              [disabled]="paginaActual() === 1"
+              matTooltip="Página anterior"
+            >
+              <mat-icon>chevron_left</mat-icon>
+              <span>Anterior</span>
+            </button>
+
+            <div class="paginas-pills">
+              @for (p of paginasArray(); track p) {
+                <button
+                  type="button"
+                  class="pagina-pill"
+                  [class.activa]="p === paginaActual()"
+                  (click)="irAPagina(p)"
+                >
+                  {{ p }}
+                </button>
+              }
+            </div>
+
+            <button
+              mat-stroked-button
+              type="button"
+              class="btn-flecha"
+              (click)="paginaSiguiente()"
+              [disabled]="paginaActual() === totalPaginas()"
+              matTooltip="Página siguiente"
+            >
+              <span>Siguiente</span>
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    @if (alquileresFiltrados().length === 0) {
+      <div class="empty-state">
+        <mat-icon>assignment_late</mat-icon>
+        <p>No se encontraron alquileres con los filtros seleccionados.</p>
+      </div>
+    }
+  </div>
+</section>

@@ -1,0 +1,124 @@
+<div class="comprobante-dialog">
+  <!-- Cabecera estándar corporativa compacta -->
+  <div class="dialog-header">
+    <div class="dialog-icon-circle">
+      <mat-icon>{{ iconoDocumento }}</mat-icon>
+    </div>
+    <div class="dialog-header-text">
+      <h2 mat-dialog-title class="dialog-title">{{ tituloDocumento }}</h2>
+      <span class="dialog-subtitle">{{ codigoAlquiler }} &bull; {{ nombreVehiculo }}</span>
+    </div>
+    <button mat-icon-button type="button" class="btn-cerrar-modal" (click)="cerrar()" matTooltip="Cerrar">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content class="modal-body">
+    <!-- Tira de metadatos superior -->
+    <div class="meta-strip">
+      <div class="meta-col">
+        <span class="meta-lbl">{{ etiquetaNumeroStrip }}</span>
+        <strong class="meta-val">{{ codigoAlquiler }}</strong>
+      </div>
+      <div class="meta-col">
+        <span class="meta-lbl">ESTADO</span>
+        <strong class="meta-val">{{ etiquetaEstadoStrip }}</strong>
+      </div>
+      <div class="meta-col">
+        <span class="meta-lbl">CONDICIÓN DE PAGO</span>
+        <strong class="meta-val" [class.pago-ok]="esPagado" [class.pago-pend]="!esPagado">
+          {{ condicionPagoStrip }}
+        </strong>
+      </div>
+    </div>
+
+    <!-- SECCIÓN UNIFICADA Y COMPACTA: DATOS DE LA OPERACIÓN -->
+    <div class="seccion-comprobante">
+      <div class="seccion-cabecera">
+        <span class="sec-titulo">Datos de la Operación</span>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Cliente Titular</span>
+          <strong class="info-valor">{{ nombreCliente }}</strong>
+          <span class="info-sub">DNI: {{ dniCliente || 'Registrado en perfil' }}</span>
+        </div>
+
+        <div class="info-item">
+          <span class="info-label">Vehículo</span>
+          <strong class="info-valor">{{ nombreVehiculo }}</strong>
+          <span class="info-sub">
+            {{ liq.tipoVehiculo }} &bull; {{ diasTexto }}
+            @if (placaVehiculo) {
+              &bull; Placa: <strong>{{ placaVehiculo }}</strong>
+            }
+          </span>
+        </div>
+
+        <div class="info-item">
+          <span class="info-label">Entrega (Recojo)</span>
+          <strong class="info-valor">{{ alquiler.fechaInicio }} &bull; {{ liq.horaEntregaPactada }}</strong>
+          <span class="info-sub">{{ liq.sedeRecojo }}</span>
+        </div>
+
+        <div class="info-item">
+          <span class="info-label">Devolución</span>
+          <strong class="info-valor">{{ alquiler.fechaFinEstimada }} &bull; {{ liq.horaDevolucionProgramada }}</strong>
+          <span class="info-sub">{{ liq.sedeDevolucion }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN: DESGLOSE ECONÓMICO -->
+    <div class="seccion-comprobante desglose-card">
+      <div class="seccion-cabecera">
+        <span class="sec-titulo">Desglose Económico</span>
+      </div>
+
+      <div class="lineas-desglose">
+        <div class="linea-desglose">
+          <span class="concepto">Alquiler base ({{ diasTexto }} &times; S/ {{ liq.tarifaDia | number:'1.2-2' }})</span>
+          <strong class="monto">S/ {{ liq.subtotalAlquiler | number:'1.2-2' }}</strong>
+        </div>
+
+        @if (liq.montoExtras > 0) {
+          <div class="linea-desglose">
+            <span class="concepto">Servicios adicionales ({{ liq.extrasTexto }})</span>
+            <strong class="monto">+ S/ {{ liq.montoExtras | number:'1.2-2' }}</strong>
+          </div>
+        }
+
+        @if (liq.montoRetraso > 0) {
+          <div class="linea-desglose linea-cargo">
+            <span class="concepto">Cargo por retraso ({{ liq.retrasoHoras }} hrs)</span>
+            <strong class="monto">+ S/ {{ liq.montoRetraso | number:'1.2-2' }}</strong>
+          </div>
+        }
+
+        @if (liq.montoPercance > 0) {
+          <div class="linea-desglose linea-cargo">
+            <span class="concepto">Cargo por combustible faltante</span>
+            <strong class="monto">+ S/ {{ liq.montoPercance | number:'1.2-2' }}</strong>
+          </div>
+        }
+
+        <div class="separador-total"></div>
+
+        <div class="linea-total-final">
+          <div>
+            <span class="total-label">{{ etiquetaTotal }}</span>
+            <span class="total-sub">{{ subtituloTotal }}</span>
+          </div>
+          <strong class="total-precio">S/ {{ liq.totalAlquiler | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button type="button" class="btn-cancelar" (click)="cerrar()">
+      Cerrar
+    </button>
+  </mat-dialog-actions>
+</div>

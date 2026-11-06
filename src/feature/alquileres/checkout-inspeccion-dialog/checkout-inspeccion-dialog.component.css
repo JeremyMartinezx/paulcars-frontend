@@ -1,0 +1,316 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ===== HEADER CORPORATIVO (ESTILO PAUL CAR'S) ===== */
+.modal-header {
+  padding: 18px 24px 16px;
+  background: #ffffff;
+  color: #0d1b3e;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-header-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: #0d1b3e;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.modal-header-icon mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  color: #ffffff;
+}
+
+.modal-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.titulo {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 1.2rem !important;
+  font-weight: 800 !important;
+  color: #0d1b3e !important;
+  line-height: 1.25 !important;
+}
+
+.subtitulo {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 0.84rem !important;
+  color: #64748b !important;
+  font-weight: 500 !important;
+  line-height: 1.35 !important;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.subtitulo span {
+  color: #64748b !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+}
+
+.subtitulo .sep {
+  color: #cbd5e1 !important;
+}
+
+.codigo-alquiler {
+  font-family: inherit;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.btn-cerrar {
+  color: #94a3b8 !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 8px !important;
+  transition: all 0.15s ease !important;
+  margin-left: 8px !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+.btn-cerrar:hover {
+  background: #f1f5f9 !important;
+  color: #0d1b3e !important;
+}
+
+.btn-cerrar mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+/* ===== CUERPO DEL DIÁLOGO ===== */
+.dialog-content {
+  padding: 20px 24px !important;
+  margin: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible !important;
+}
+
+.message-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dialog-prompt {
+  margin: 0;
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.dialog-detalles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dialog-detalles li {
+  margin: 0;
+  padding: 0;
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 400;
+  line-height: 1.5;
+  position: relative;
+  padding-left: 14px;
+}
+
+.dialog-detalles li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #64748b;
+  font-weight: normal;
+}
+
+.dialog-detalles li strong {
+  font-weight: 400;
+  color: #334155;
+}
+
+.dialog-nota {
+  margin: 4px 0 0;
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.dialog-nota strong {
+  font-weight: 400;
+  color: #334155;
+}
+
+/* ===== ALERTA ERROR ===== */
+.alerta-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.alerta-error mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ===== ACCIONES / FOOTER ===== */
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 22px 16px !important;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+  margin: 0 !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-cancelar {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  --mdc-text-button-container-color: #ffffff !important;
+  --mdc-outlined-button-container-color: #ffffff !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+  height: 40px !important;
+  padding: 0 18px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-size: 0.88rem !important;
+}
+
+.btn-cancelar:hover:not(:disabled) {
+  background: #f8fafc !important;
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+  border-color: #94a3b8 !important;
+}
+
+.btn-confirmar {
+  background: #0d1b3e !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  height: 40px !important;
+  padding: 0 22px !important;
+  font-weight: 700 !important;
+  font-size: 0.88rem !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  box-shadow: 0 2px 6px rgba(13, 27, 62, 0.2) !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-confirmar:hover:not(:disabled) {
+  background: #153d7a !important;
+  box-shadow: 0 4px 12px rgba(13, 27, 62, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-confirmar ::ng-deep .mdc-button__label {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  line-height: normal !important;
+}
+
+.btn-confirmar mat-icon {
+  font-size: 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+  line-height: 20px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  font-weight: 700 !important;
+  -webkit-text-stroke: 0.6px #ffffff;
+  color: #ffffff;
+  margin: 0 !important;
+}
+
+.btn-confirmar:disabled,
+.btn-cancelar:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+.spin-icon {
+  animation: spin 1.5s linear infinite;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}

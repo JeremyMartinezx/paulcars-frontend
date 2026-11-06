@@ -1,0 +1,562 @@
+<div class="alquiler-dialog">
+  <div class="dialog-header">
+    <div class="dialog-icon-circle">
+      <mat-icon>directions_car</mat-icon>
+    </div>
+    <div class="dialog-header-text">
+      <h2 mat-dialog-title class="dialog-title">Nuevo Contrato de Alquiler</h2>
+      <span class="dialog-subtitle">Registro en counter y asignación de vehículo</span>
+    </div>
+    <button mat-icon-button type="button" class="btn-cerrar-modal" (click)="cancelar()" matTooltip="Cerrar">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="form-content" autocomplete="off">
+    <mat-dialog-content class="modal-body">
+
+      <!-- SECCIÓN: CLIENTE TITULAR (1 SOLO CAMPO: BUSCAR POR DNI O NOMBRE) -->
+      <div class="seccion-grupo" [class.z-dropdown]="dropdownAbierto() === 'cliente'">
+        <div class="seccion-cabecera">
+          <label class="pc-field-label" for="inputBuscarCliente">
+            <mat-icon class="pc-field-icon">person_search</mat-icon>
+            <span>CLIENTE TITULAR</span>
+          </label>
+          <button
+            type="button"
+            class="btn-nuevo-cliente"
+            (click)="abrirNuevoCliente()"
+            matTooltip="Registrar un nuevo cliente sin salir"
+          >
+            <mat-icon>person_add</mat-icon>
+            <span>+ Nuevo cliente</span>
+          </button>
+        </div>
+
+        <div class="custom-dropdown" (click)="$event.stopPropagation()">
+          <div
+            class="pc-search-box"
+            [class.is-open]="dropdownAbierto() === 'cliente'"
+            (click)="abrirDropdownCliente($event)"
+          >
+            <mat-icon class="pc-search-icon">search</mat-icon>
+            <input
+              id="inputBuscarCliente"
+              type="text"
+              class="pc-search-input"
+              [ngModel]="busquedaCliente()"
+              (ngModelChange)="onBusquedaClienteInput($event)"
+              [ngModelOptions]="{ standalone: true }"
+              (focus)="abrirDropdownCliente($event)"
+              placeholder="Buscar por DNI o nombre..."
+              autocomplete="off"
+            />
+            @if (busquedaCliente() || clienteSeleccionado()) {
+              <button
+                type="button"
+                class="btn-clear-input"
+                (click)="limpiarBusquedaCliente($event)"
+                matTooltip="Limpiar búsqueda"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            } @else {
+              <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'cliente' ? 'expand_less' : 'expand_more' }}</mat-icon>
+            }
+          </div>
+
+          @if (dropdownAbierto() === 'cliente') {
+            <ul class="custom-dropdown-menu" role="listbox">
+              @if (clientesFiltrados().length === 0) {
+                <li class="dropdown-empty-item">
+                  <mat-icon class="icon-empty">person_off</mat-icon>
+                  <div class="empty-info">
+                    <strong>Cliente no encontrado</strong>
+                    <small>Usa el botón "+ Nuevo cliente" para registrarlo</small>
+                  </div>
+                </li>
+              } @else {
+                @for (cliente of clientesFiltrados(); track cliente.idCliente) {
+                  @let habilitado = clienteTieneDatosCompletos(cliente);
+                  <li
+                    class="custom-dropdown-item"
+                    role="option"
+                    [class.selected]="clienteSeleccionadoId() === cliente.idCliente"
+                    [class.disabled]="!habilitado"
+                    [attr.aria-disabled]="!habilitado"
+                    (click)="seleccionarCliente(cliente, $event)"
+                  >
+                    <span class="item-name">{{ cliente.nombres }} {{ cliente.apellidos }}</span>
+                    @if (habilitado) {
+                      <span class="item-schedule">DNI: {{ cliente.numeroDocumento }} &bull; Lic: {{ cliente.licenciaConducir }}</span>
+                    } @else {
+                      <span class="item-incompleto">
+                        {{ !cliente.numeroDocumento?.trim() && !cliente.licenciaConducir?.trim() ? 'Sin DNI ni licencia' : (!cliente.numeroDocumento?.trim() ? 'Sin DNI registrado' : 'Sin licencia registrada') }}
+                      </span>
+                    }
+                  </li>
+                }
+              }
+            </ul>
+          }
+        </div>
+
+        @if (form.controls.clienteId.hasError('required') && form.controls.clienteId.touched) {
+          <span class="error-msg">Debes seleccionar un cliente titular.</span>
+        }
+
+        @if (clienteSeleccionado(); as cli) {
+          <div class="cliente-resumen-discreto">
+            <div class="cli-info-linea">
+              <strong class="cli-nombre">{{ cli.nombres }} {{ cli.apellidos }}</strong>
+              <span class="cli-separador">&bull;</span>
+              <span>DNI: <strong>{{ cli.numeroDocumento }}</strong></span>
+              <span class="cli-separador">&bull;</span>
+              <span>Licencia: <strong>{{ cli.licenciaConducir || 'No registrada' }}</strong></span>
+              <span class="cli-separador">&bull;</span>
+              <span>Teléfono: <strong>{{ cli.telefono || '—' }}</strong></span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- SECCIÓN: VEHÍCULO DISPONIBLE -->
+      <div class="seccion-grupo" [class.z-dropdown]="dropdownAbierto() === 'vehiculo'">
+        <div class="seccion-cabecera">
+          <label class="pc-field-label" (click)="toggleDropdown('vehiculo', $event)">
+            <mat-icon class="pc-field-icon">directions_car</mat-icon>
+            <span>VEHÍCULO DISPONIBLE</span>
+          </label>
+        </div>
+
+        <div class="custom-dropdown" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="custom-dropdown-trigger"
+            [class.is-open]="dropdownAbierto() === 'vehiculo'"
+            (click)="toggleDropdown('vehiculo', $event)"
+          >
+            <span class="dropdown-selected-value" [class.text-muted]="!vehiculoSeleccionado()">
+              @if (vehiculoSeleccionado(); as vsel) {
+                {{ vsel.modelo?.marca?.nombreMarca }} {{ vsel.modelo?.modelo }} &bull; {{ vsel.tipo?.nombreTipo }} &bull; S/ {{ vsel.precioDia }}/día
+              } @else {
+                Seleccionar vehículo de la flota...
+              }
+            </span>
+            <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'vehiculo' ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
+
+          @if (dropdownAbierto() === 'vehiculo') {
+            <ul class="custom-dropdown-menu" role="listbox">
+              @for (vehiculo of vehiculosList(); track vehiculo.idVehiculo) {
+                <li
+                  class="custom-dropdown-item"
+                  role="option"
+                  [class.selected]="vehiculoSeleccionadoId() === vehiculo.idVehiculo"
+                  (click)="seleccionarVehiculo(vehiculo, $event)"
+                >
+                  <span class="item-name">{{ vehiculo.modelo?.marca?.nombreMarca }} {{ vehiculo.modelo?.modelo }}</span>
+                  <span class="item-schedule">{{ vehiculo.tipo?.nombreTipo }} &bull; S/ {{ vehiculo.precioDia }}/día</span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        @if (form.controls.vehiculoId.hasError('required') && form.controls.vehiculoId.touched) {
+          <span class="error-msg">Debes seleccionar un vehículo disponible.</span>
+        }
+
+        @if (vehiculoSeleccionado(); as v) {
+          <div class="vehiculo-card-visual">
+            <div class="vehiculo-foto-box">
+              <img
+                [src]="obtenerImagenVehiculo(v)"
+                [alt]="(v.modelo?.marca?.nombreMarca || '') + ' ' + (v.modelo?.modelo || '')"
+                (error)="$any($event.target).src = '/images/vehiculos/corolla.jpg'"
+                class="vehiculo-foto-img"
+              />
+              <span class="tipo-chip">{{ v.tipo?.nombreTipo }}</span>
+            </div>
+            <div class="vehiculo-meta-box">
+              <div class="meta-header">
+                <strong class="meta-nombre">{{ v.modelo?.marca?.nombreMarca }} {{ v.modelo?.modelo }}</strong>
+                <span class="meta-tarifa">S/ {{ v.precioDia | number:'1.2-2' }} <small>/ día</small></span>
+              </div>
+              <div class="meta-specs-row">
+                <span>Placa: <strong>{{ v.placa || 'En flota' }}</strong></span>
+                <span class="meta-sep">&bull;</span>
+                <span>Año: <strong>{{ v.anio }}</strong></span>
+                <span class="meta-sep">&bull;</span>
+                <span>Combustible: <strong>{{ v.combustible?.nombreCombustible || 'Gasolina' }}</strong></span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- SECCIÓN: ITINERARIO DE ALQUILER -->
+      <div class="seccion-grupo" [class.z-dropdown]="dropdownAbierto() === 'recojoSede' || dropdownAbierto() === 'devolucionSede' || dropdownAbierto() === 'inicioHora' || dropdownAbierto() === 'finHora'">
+        <div class="seccion-cabecera">
+          <span class="seccion-titulo">Itinerario de alquiler</span>
+        </div>
+
+        <div class="itinerario-grid">
+          <!-- Columna Entrega -->
+          <div class="itinerario-card" [class.dropdown-activo]="dropdownAbierto() === 'recojoSede' || dropdownAbierto() === 'inicioHora'">
+            <div class="itinerario-card-header">
+              <span class="itinerario-card-titulo">Entrega del vehículo</span>
+            </div>
+
+            <div class="itinerario-card-body">
+              <div class="campo-bloque">
+                <label class="pc-field-label" (click)="toggleDropdown('recojoSede', $event)">
+                  <mat-icon class="pc-field-icon">storefront</mat-icon>
+                  <span>OFICINA DE RECOJO</span>
+                </label>
+
+                <div class="custom-dropdown" (click)="$event.stopPropagation()">
+                  <button
+                    type="button"
+                    class="custom-dropdown-trigger"
+                    [class.is-open]="dropdownAbierto() === 'recojoSede'"
+                    (click)="toggleDropdown('recojoSede', $event)"
+                  >
+                    <span class="dropdown-selected-value">
+                      {{ sedeRecojoSig() === 'MIRAFLORES' ? 'Miraflores - Av. 28 de Julio 489' : 'Aeropuerto Internacional Jorge Chávez' }}
+                    </span>
+                    <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'recojoSede' ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </button>
+
+                  @if (dropdownAbierto() === 'recojoSede') {
+                    <ul class="custom-dropdown-menu branch-menu-modal" role="listbox">
+                      <li
+                        class="custom-dropdown-item branch-item-col"
+                        role="option"
+                        [class.selected]="sedeRecojoSig() === 'MIRAFLORES'"
+                        (click)="seleccionarSedeRecojo('MIRAFLORES', $event)"
+                      >
+                        <span class="item-name">Miraflores - Av. 28 de Julio 489</span>
+                        <span class="item-schedule">(Lun-Vie: 8:30-18:00 Sáb: 9:00-17:00)</span>
+                      </li>
+                      <li
+                        class="custom-dropdown-item branch-item-col"
+                        role="option"
+                        [class.selected]="sedeRecojoSig() === 'AEROPUERTO'"
+                        (click)="seleccionarSedeRecojo('AEROPUERTO', $event)"
+                      >
+                        <span class="item-name">Aeropuerto Internacional Jorge Chávez</span>
+                        <span class="item-schedule">(Atención 24 horas)</span>
+                      </li>
+                    </ul>
+                  }
+                </div>
+              </div>
+
+              <div class="campo-bloque">
+                <label class="pc-field-label" (click)="pickerInicio.open()">
+                  <mat-icon class="pc-field-icon">event</mat-icon>
+                  <span>FECHA Y HORA RECOJO</span>
+                </label>
+
+                <div class="datetime-inputs">
+                  <div class="custom-date-box" (click)="pickerInicio.open()">
+                    <input
+                      type="text"
+                      [matDatepicker]="pickerInicio"
+                      [matDatepickerFilter]="filtroFechasInicio"
+                      [min]="minFechaInicioDate()"
+                      [value]="fechaInicioDate()"
+                      (dateChange)="onFechaInicioMatChange($event)"
+                      class="form-input date-input custom-date-picker-input"
+                      readonly
+                      placeholder="DD/MM/AAAA"
+                    />
+                    <button
+                      type="button"
+                      class="btn-picker-icon"
+                      (click)="$event.stopPropagation(); pickerInicio.open()"
+                      aria-label="Abrir calendario"
+                    >
+                      <mat-icon>calendar_month</mat-icon>
+                    </button>
+                    <mat-datepicker #pickerInicio panelClass="paulcars-calendar-panel" yPosition="below"></mat-datepicker>
+                  </div>
+
+                  <div class="custom-dropdown time-dropdown-box" (click)="$event.stopPropagation()">
+                    <button
+                      type="button"
+                      class="custom-dropdown-trigger time-trigger"
+                      [class.is-open]="dropdownAbierto() === 'inicioHora'"
+                      [class.no-turns]="horasRecojo().length === 0"
+                      (click)="toggleDropdown('inicioHora', $event)"
+                      aria-label="Hora de entrega"
+                    >
+                      <span class="dropdown-selected-value time-val" [class.text-muted]="horasRecojo().length === 0">
+                        @if (horasRecojo().length === 0) {
+                          {{ esDomingo(fechaInicioSig()) && sedeRecojoSig() === 'MIRAFLORES' ? 'Cerrado' : 'Sin turnos' }}
+                        } @else {
+                          {{ horaRecojoSig() }}
+                        }
+                      </span>
+                      <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'inicioHora' ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </button>
+
+                    @if (dropdownAbierto() === 'inicioHora') {
+                      <ul class="custom-dropdown-menu time-menu" role="listbox">
+                        @if (horasRecojo().length === 0) {
+                          <li class="dropdown-empty-item">
+                            <mat-icon class="icon-empty">event_busy</mat-icon>
+                            <div class="empty-info">
+                              @if (esDomingo(fechaInicioSig()) && sedeRecojoSig() === 'MIRAFLORES') {
+                                <strong>Sede Miraflores cerrada</strong>
+                                <small>No hay atención los domingos</small>
+                              } @else {
+                                <strong>Sin turnos hoy</strong>
+                                <small>Los turnos de hoy ya concluyeron</small>
+                              }
+                            </div>
+                          </li>
+                        } @else {
+                          @for (h of horasRecojo(); track h) {
+                            <li
+                              class="custom-dropdown-item time-item"
+                              role="option"
+                              [class.selected]="horaRecojoSig() === h"
+                              (click)="seleccionarHoraRecojo(h, $event)"
+                            >
+                              {{ h }}
+                            </li>
+                          }
+                        }
+                      </ul>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna Devolución -->
+          <div class="itinerario-card" [class.dropdown-activo]="dropdownAbierto() === 'devolucionSede' || dropdownAbierto() === 'finHora'">
+            <div class="itinerario-card-header">
+              <span class="itinerario-card-titulo">Devolución del vehículo</span>
+            </div>
+
+            <div class="itinerario-card-body">
+              <div class="campo-bloque">
+                <label class="pc-field-label" (click)="toggleDropdown('devolucionSede', $event)">
+                  <mat-icon class="pc-field-icon">replay</mat-icon>
+                  <span>OFICINA DE DEVOLUCIÓN</span>
+                </label>
+
+                <div class="custom-dropdown" (click)="$event.stopPropagation()">
+                  <button
+                    type="button"
+                    class="custom-dropdown-trigger"
+                    [class.is-open]="dropdownAbierto() === 'devolucionSede'"
+                    (click)="toggleDropdown('devolucionSede', $event)"
+                  >
+                    <span class="dropdown-selected-value">
+                      {{ sedeDevolucionSig() === 'MIRAFLORES' ? 'Miraflores - Av. 28 de Julio 489' : 'Aeropuerto Internacional Jorge Chávez' }}
+                    </span>
+                    <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'devolucionSede' ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </button>
+
+                  @if (dropdownAbierto() === 'devolucionSede') {
+                    <ul class="custom-dropdown-menu branch-menu-modal branch-menu-right" role="listbox">
+                      <li
+                        class="custom-dropdown-item branch-item-col"
+                        role="option"
+                        [class.selected]="sedeDevolucionSig() === 'MIRAFLORES'"
+                        (click)="seleccionarSedeDevolucion('MIRAFLORES', $event)"
+                      >
+                        <span class="item-name">Miraflores - Av. 28 de Julio 489</span>
+                        <span class="item-schedule">(Lun-Vie: 8:30-18:00 Sáb: 9:00-17:00)</span>
+                      </li>
+                      <li
+                        class="custom-dropdown-item branch-item-col"
+                        role="option"
+                        [class.selected]="sedeDevolucionSig() === 'AEROPUERTO'"
+                        (click)="seleccionarSedeDevolucion('AEROPUERTO', $event)"
+                      >
+                        <span class="item-name">Aeropuerto Internacional Jorge Chávez</span>
+                        <span class="item-schedule">(Atención 24 horas)</span>
+                      </li>
+                    </ul>
+                  }
+                </div>
+              </div>
+
+              <div class="campo-bloque">
+                <label class="pc-field-label" (click)="pickerFin.open()">
+                  <mat-icon class="pc-field-icon">event_available</mat-icon>
+                  <span>FECHA Y HORA DEVOLUCIÓN</span>
+                </label>
+
+                <div class="datetime-inputs">
+                  <div class="custom-date-box" (click)="pickerFin.open()">
+                    <input
+                      type="text"
+                      [matDatepicker]="pickerFin"
+                      [matDatepickerFilter]="filtroFechasFin"
+                      [min]="minFechaFinDate()"
+                      [value]="fechaFinDate()"
+                      (dateChange)="onFechaFinMatChange($event)"
+                      class="form-input date-input custom-date-picker-input"
+                      readonly
+                      placeholder="DD/MM/AAAA"
+                    />
+                    <button
+                      type="button"
+                      class="btn-picker-icon"
+                      (click)="$event.stopPropagation(); pickerFin.open()"
+                      aria-label="Abrir calendario"
+                    >
+                      <mat-icon>calendar_month</mat-icon>
+                    </button>
+                    <mat-datepicker #pickerFin panelClass="paulcars-calendar-panel" yPosition="below"></mat-datepicker>
+                  </div>
+
+                  <div class="custom-dropdown time-dropdown-box" (click)="$event.stopPropagation()">
+                    <button
+                      type="button"
+                      class="custom-dropdown-trigger time-trigger"
+                      [class.is-open]="dropdownAbierto() === 'finHora'"
+                      [class.no-turns]="horasDevolucion().length === 0"
+                      (click)="toggleDropdown('finHora', $event)"
+                      aria-label="Hora de devolución"
+                    >
+                      <span class="dropdown-selected-value time-val" [class.text-muted]="horasDevolucion().length === 0">
+                        @if (horasDevolucion().length === 0) {
+                          {{ esDomingo(fechaFinSig()) && sedeDevolucionSig() === 'MIRAFLORES' ? 'Cerrado' : 'Sin turnos' }}
+                        } @else {
+                          {{ horaDevolucionSig() }}
+                        }
+                      </span>
+                      <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'finHora' ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </button>
+
+                    @if (dropdownAbierto() === 'finHora') {
+                      <ul class="custom-dropdown-menu time-menu" role="listbox">
+                        @if (horasDevolucion().length === 0) {
+                          <li class="dropdown-empty-item">
+                            <mat-icon class="icon-empty">event_busy</mat-icon>
+                            <div class="empty-info">
+                              @if (esDomingo(fechaFinSig()) && sedeDevolucionSig() === 'MIRAFLORES') {
+                                <strong>Sede Miraflores cerrada</strong>
+                                <small>No hay atención los domingos</small>
+                              } @else {
+                                <strong>Sin turnos</strong>
+                                <small>No hay turnos para esta fecha</small>
+                              }
+                            </div>
+                          </li>
+                        } @else {
+                          @for (h of horasDevolucion(); track h) {
+                            <li
+                              class="custom-dropdown-item time-item"
+                              role="option"
+                              [class.selected]="horaDevolucionSig() === h"
+                              (click)="seleccionarHoraDevolucion(h, $event)"
+                            >
+                              {{ h }}
+                            </li>
+                          }
+                        }
+                      </ul>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        @if (form.hasError('rangoInvalido') && (form.controls.fechaFin.touched || form.controls.fechaInicio.touched)) {
+          <div class="error-banner">
+            <mat-icon>error_outline</mat-icon>
+            <span>La fecha de devolución debe ser posterior a la fecha de entrega.</span>
+          </div>
+        }
+      </div>
+
+      <!-- SECCIÓN: SERVICIOS ADICIONALES (EXTRAS) -->
+      <div class="seccion-grupo">
+        <div class="seccion-cabecera">
+          <span class="seccion-titulo">Servicios adicionales</span>
+        </div>
+
+        <div class="extras-grid">
+          <label class="extra-item" [class.extra-activo]="form.controls.seguroTodoRiesgo.value">
+            <mat-checkbox formControlName="seguroTodoRiesgo" color="primary"></mat-checkbox>
+            <div class="extra-textos">
+              <span class="extra-nombre">Seguro Todo Riesgo</span>
+              <span class="extra-tarifa">+ S/ {{ tarifas.seguroTodoRiesgoDia | number:'1.2-2' }} / día</span>
+            </div>
+          </label>
+
+          <label class="extra-item" [class.extra-activo]="form.controls.conductorAdicional.value">
+            <mat-checkbox formControlName="conductorAdicional" color="primary"></mat-checkbox>
+            <div class="extra-textos">
+              <span class="extra-nombre">Conductor Adicional</span>
+              <span class="extra-tarifa">+ S/ {{ tarifas.conductorAdicionalDia | number:'1.2-2' }} / día</span>
+            </div>
+          </label>
+
+          <label class="extra-item" [class.extra-activo]="form.controls.sillaBebe.value">
+            <mat-checkbox formControlName="sillaBebe" color="primary"></mat-checkbox>
+            <div class="extra-textos">
+              <span class="extra-nombre">Silla de Bebé</span>
+              <span class="extra-tarifa">+ S/ {{ tarifas.sillaBebeDia | number:'1.2-2' }} / día</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- RESUMEN DE LIQUIDACIÓN -->
+      <div class="total-card">
+        @if (diasCalculados() > 0 && vehiculoSeleccionado()) {
+          <div class="resumen-desglose">
+            <div class="resumen-linea">
+              <span class="resumen-concepto">
+                Alquiler base ({{ diasCalculados() }} {{ diasCalculados() === 1 ? 'día' : 'días' }} &times; S/ {{ vehiculoSeleccionado()?.precioDia | number:'1.2-2' }})
+              </span>
+              <strong class="resumen-valor">S/ {{ subtotalBase() | number:'1.2-2' }}</strong>
+            </div>
+
+            @if (totalExtras() > 0) {
+              <div class="resumen-linea">
+                <span class="resumen-concepto">Servicios adicionales</span>
+                <strong class="resumen-valor">+ S/ {{ totalExtras() | number:'1.2-2' }}</strong>
+              </div>
+            }
+          </div>
+
+          <div class="total-separador"></div>
+
+          <div class="total-fila-final">
+            <div>
+              <span class="total-titulo">Total a cobrar en counter</span>
+              <span class="total-subtexto">Liquidación de contrato para entrega de llaves</span>
+            </div>
+            <strong class="total-monto">S/ {{ totalEstimado() | number:'1.2-2' }}</strong>
+          </div>
+        } @else {
+          <div class="total-placeholder">
+            <mat-icon>info</mat-icon>
+            <span>Selecciona un vehículo disponible y las fechas para calcular el importe total.</span>
+          </div>
+        }
+      </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button type="button" class="btn-cancelar" (click)="cancelar()">Cancelar</button>
+      <button mat-flat-button class="btn-registrar" type="submit" [disabled]="form.invalid">
+        Registrar alquiler
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>

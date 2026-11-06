@@ -1,0 +1,90 @@
+<div class="cliente-dialog">
+  <div class="dialog-header">
+    <div class="dialog-icon-circle">
+      <mat-icon>person</mat-icon>
+    </div>
+    <div class="dialog-header-text">
+      <h2 mat-dialog-title class="dialog-title">{{ esEdicion ? 'Editar cliente' : 'Nuevo cliente' }}</h2>
+      <span class="dialog-subtitle">{{ esEdicion ? 'Actualiza los datos del cliente' : 'Registro de información personal del cliente' }}</span>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="cliente-form" autocomplete="off">
+    <mat-dialog-content class="modal-content">
+      <div class="grid-2">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" hideRequiredMarker>
+          <mat-label>Nombres</mat-label>
+          <input matInput formControlName="nombres" placeholder="Ej: Juan" autocomplete="off">
+          @if (form.controls.nombres.hasError('required') && form.controls.nombres.touched) {
+            <mat-error>Los nombres son obligatorios.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" hideRequiredMarker>
+          <mat-label>Apellidos</mat-label>
+          <input matInput formControlName="apellidos" placeholder="Ej: Pérez" autocomplete="off">
+          @if (form.controls.apellidos.hasError('required') && form.controls.apellidos.touched) {
+            <mat-error>Los apellidos son obligatorios.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="grid-2">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" hideRequiredMarker>
+          <mat-label>DNI</mat-label>
+          <input matInput formControlName="numeroDocumento" placeholder="12345678" maxlength="8" inputmode="numeric" autocomplete="off">
+          @if (form.controls.numeroDocumento.hasError('required') && form.controls.numeroDocumento.touched) {
+            <mat-error>El DNI es obligatorio.</mat-error>
+          }
+          @if (form.controls.numeroDocumento.hasError('pattern') && form.controls.numeroDocumento.touched) {
+            <mat-error>Debe contener exactamente 8 dígitos.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" hideRequiredMarker>
+          <mat-label>Licencia de conducir</mat-label>
+          <input matInput formControlName="licenciaConducir" placeholder="Q12345678" maxlength="9" style="text-transform: uppercase;" autocomplete="off">
+          @if (form.controls.licenciaConducir.hasError('required') && form.controls.licenciaConducir.touched) {
+            <mat-error>La licencia es obligatoria.</mat-error>
+          }
+          @if (form.controls.licenciaConducir.hasError('pattern') && form.controls.licenciaConducir.touched) {
+            <mat-error>1 letra y 8 números (ej: Q12345678).</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="grid-2">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" hideRequiredMarker>
+          <mat-label>Teléfono</mat-label>
+          <input matInput formControlName="telefono" placeholder="987654321" maxlength="9" inputmode="numeric" autocomplete="off">
+          @if (form.controls.telefono.hasError('required') && form.controls.telefono.touched) {
+            <mat-error>El teléfono es obligatorio.</mat-error>
+          }
+          @if (form.controls.telefono.hasError('pattern') && form.controls.telefono.touched) {
+            <mat-error>Debe iniciar con 9 y tener 9 dígitos.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" hideRequiredMarker>
+          <mat-label>Correo electrónico</mat-label>
+          <input matInput type="email" formControlName="email" placeholder="cliente@correo.com"
+                 name="nuevo_cliente_email_field" autocomplete="off">
+          @if (form.controls.email.hasError('required') && form.controls.email.touched) {
+            <mat-error>El correo es obligatorio.</mat-error>
+          }
+          @if (form.controls.email.hasError('email') && form.controls.email.touched) {
+            <mat-error>Ingresa un correo válido.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-stroked-button type="button" class="btn-cancelar" (click)="cancelar()">Cancelar</button>
+      <button mat-flat-button color="primary" class="btn-guardar" type="submit">
+        <mat-icon>{{ esEdicion ? 'save' : 'person_add' }}</mat-icon>
+        <span>{{ esEdicion ? 'Guardar cambios' : 'Registrar cliente' }}</span>
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>

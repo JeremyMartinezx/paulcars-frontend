@@ -1,0 +1,91 @@
+<header class="modal-header">
+  <div class="modal-header-left">
+    <div class="modal-header-icon">
+      <mat-icon>assignment_turned_in</mat-icon>
+    </div>
+    <div class="modal-header-text">
+      <h2 mat-dialog-title class="titulo">Aprobar Solicitud de Reserva</h2>
+      <div class="subtitulo">
+      <span class="codigo-alquiler">{{ formatearCodigoAlquiler(alquiler.idAlquiler) }}</span>
+      <span class="sep">&bull;</span>
+      <span>{{ vehiculo.modelo?.marca?.nombreMarca }} {{ vehiculo.modelo?.modelo }}</span>
+      <span class="sep">&bull;</span>
+      <span>{{ cliente.nombres }} {{ cliente.apellidos }}</span>
+    </div>
+    </div>
+  </div>
+  <button mat-icon-button type="button" class="btn-cerrar" (click)="cerrar()" aria-label="Cerrar">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<mat-dialog-content class="pc-dialog-body">
+  @if (sinLicencia) {
+    <div class="pc-alert warn">
+      <mat-icon>warning</mat-icon>
+      <span>El cliente no tiene licencia de conducir registrada. Debes rechazar la solicitud o completar su ficha.</span>
+    </div>
+  }
+
+  <div class="pc-grid-3">
+    <!-- Bloque Cliente -->
+    <section class="pc-block">
+      <h3><mat-icon>person</mat-icon> Cliente</h3>
+      <strong class="nombre">{{ cliente.nombres }} {{ cliente.apellidos }}</strong>
+      <div class="pc-row"><span>DNI</span><strong>{{ cliente.numeroDocumento }}</strong></div>
+      <div class="pc-row"><span>Licencia</span><strong>{{ cliente.licenciaConducir || 'No registrada' }}</strong></div>
+      <div class="pc-row"><span>Teléfono</span><strong>{{ cliente.telefono }}</strong></div>
+      <div class="pc-row"><span>Correo</span><strong class="corto">{{ cliente.email }}</strong></div>
+      <div class="pc-row"><span>Alquileres previos</span><strong>{{ data.historialCliente.length - 1 > 0 ? data.historialCliente.length - 1 : 0 }}</strong></div>
+    </section>
+
+    <!-- Bloque Vehículo -->
+    <section class="pc-block">
+      <h3><mat-icon>directions_car</mat-icon> Vehículo</h3>
+      @if (imagen) {
+        <img class="pc-vehiculo-img" [src]="imagen" [alt]="vehiculo.modelo?.modelo">
+      }
+      <strong class="nombre">{{ vehiculo.modelo?.marca?.nombreMarca }} {{ vehiculo.modelo?.modelo }}</strong>
+      <div class="pc-row"><span>Placa</span><strong>{{ vehiculo.placa }}</strong></div>
+      <div class="pc-row"><span>Categoría</span><strong>{{ categoria }}</strong></div>
+      <div class="pc-row"><span>Entrega</span><strong>{{ formatearSede(alquiler.sedeRecojo) }}</strong></div>
+      <div class="pc-row"><span>Devolución</span><strong>{{ formatearSede(alquiler.sedeDevolucion) }}</strong></div>
+    </section>
+
+    <!-- Bloque Tarifario -->
+    <section class="pc-block">
+      <h3><mat-icon>receipt_long</mat-icon> Tarifario</h3>
+      <div class="pc-row"><span>Desde</span><strong>{{ alquiler.fechaInicio }} {{ alquiler.horaRecojo }}</strong></div>
+      <div class="pc-row"><span>Hasta</span><strong>{{ alquiler.fechaFinEstimada }} {{ alquiler.horaDevolucion }}</strong></div>
+      <div class="pc-row"><span>Días totales</span><strong>{{ dias }}</strong></div>
+      <div class="pc-row"><span>Tarifa base</span><strong>S/ {{ tarifaBase | number:'1.2-2' }}</strong></div>
+      <div class="pc-row extras">
+        <span>Servicios extras</span>
+        <strong>
+          @if (extras.length === 0) {
+            Ninguno
+          } @else {
+            @for (e of extras; track e) {
+              <span class="extra-tag">{{ e }}</span>
+            }
+          }
+        </strong>
+      </div>
+      <div class="pc-row"><span>Monto extras</span><strong>S/ {{ montoExtras | number:'1.2-2' }}</strong></div>
+      <div class="pc-row"><span class="label-garantia">Depósito de garantía requerido</span><strong class="precio-nowrap">S/ {{ garantia | number:'1.2-2' }}</strong></div>
+      <div class="pc-row total"><span>Total a pagar en counter</span><strong>S/ {{ total | number:'1.2-2' }}</strong></div>
+    </section>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="pc-actions">
+  <button mat-button type="button" class="btn-cancelar" (click)="cerrar()">Volver</button>
+  <button mat-flat-button type="button" class="btn-rechazar" (click)="rechazar()">
+    <mat-icon>cancel</mat-icon>
+    <span>Rechazar Solicitud</span>
+  </button>
+  <button mat-flat-button type="button" class="btn-confirmar" (click)="aprobar()" [disabled]="bloqueado || sinLicencia">
+    <mat-icon>check_circle</mat-icon>
+    Confirmar y Aprobar Reserva
+  </button>
+</mat-dialog-actions>
