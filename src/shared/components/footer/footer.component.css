@@ -1,0 +1,243 @@
+.footer {
+  background-color: #0d1b3c;
+  color: #fff;
+  font-family: 'Roboto', sans-serif;
+  padding: 2rem clamp(1rem, 4vw, 3rem);
+}
+
+.footer-top {
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) 1fr;
+  gap: 2rem;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.footer-brand {
+  min-width: 0;
+}
+
+.footer-brand img {
+  display: block;
+  width: min(150px, 100%);
+  height: auto;
+  margin-bottom: 0.75rem;
+}
+
+.footer-brand p {
+  margin: 0;
+  line-height: 1.6;
+  color: #d9e2f2;
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.payment-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.payment-methods span,
+.column h4 {
+  color: #fcdc3b;
+  font-weight: 700;
+}
+
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cards img {
+  display: block;
+  max-width: 60px;
+  max-height: 32px;
+  width: auto;
+  height: 30px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.cards img.pay-wallet-badge {
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.footer-links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  gap: 1.5rem;
+}
+
+.column {
+  min-width: 0;
+}
+
+.column h4 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.column a,
+.column p {
+  color: #fff;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.column a {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 0.4rem;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  transition: color 0.3s;
+}
+
+.column a:hover {
+  color: #fcdc3b;
+}
+
+.column p {
+  margin: 0 0 0.4rem;
+  overflow-wrap: anywhere;
+}
+
+.contact-line {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 0 0.5rem !important;
+  color: #ffffff !important;
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
+}
+
+.contact-line i {
+  width: 18px !important;
+  text-align: center !important;
+  color: #fcdc3b !important;
+  font-size: 0.95rem !important;
+  flex-shrink: 0 !important;
+}
+
+.contact-link {
+  display: inline-block !important;
+  color: #ffffff !important;
+  text-decoration: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.contact-link:hover {
+  color: #fcdc3b !important;
+  text-decoration: underline !important;
+}
+
+.column .whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background-color: #25d366;
+  color: #fff;
+  font-size: 1.55rem;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+}
+
+.column .whatsapp-btn:hover {
+  color: #fff;
+  background-color: #1fb85a;
+  transform: translateY(-1px);
+}
+
+.column .whatsapp-btn i {
+  line-height: 1;
+}
+
+.footer-bottom {
+  max-width: 1180px;
+  margin: 2rem auto 0;
+  border-top: 1px solid rgb(255 255 255 / 18%);
+  padding-top: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #d9e2f2;
+}
+
+/* Footer administrativo mínimo para /admin/* y /empleado/* */
+.footer-admin-minimal {
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 1.25rem 1rem;
+  text-align: center;
+}
+
+.footer-minimal-text {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 900px) {
+  .footer-top {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-brand {
+    text-align: center;
+  }
+
+  .footer-brand img {
+    margin-right: auto;
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .footer {
+    padding: 1.5rem 1rem;
+  }
+
+  .footer-content,
+  .payment-methods,
+  .footer-links,
+  .column {
+    align-items: center;
+    text-align: center;
+  }
+
+  .cards {
+    justify-content: center;
+  }
+
+  .footer-links {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .column a,
+  .whatsapp-btn {
+    margin-right: auto;
+    margin-left: auto;
+  }
+}

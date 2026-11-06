@@ -1,0 +1,76 @@
+@if (esVistaAdminOAsesor()) {
+  <footer class="footer-admin-minimal">
+    <p class="footer-minimal-text">&copy; 2026 Paul Car's. Todos los derechos reservados.</p>
+  </footer>
+} @else {
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <img src="images/logo-white.png" alt="PAUL CAR'S">
+        <p>Alquiler de autos, SUVs, pickups y minivans en Lima, Perú.</p>
+      </div>
+
+      <div class="footer-content">
+        <div class="payment-methods">
+          <span>Métodos de pago:</span>
+          <div class="cards">
+            <img src="images/visa.png" alt="Visa">
+            <img src="images/mastercard.png" alt="Mastercard">
+            <img src="images/amex.png" alt="American Express">
+            <img src="images/yape.png" alt="Yape" class="pay-wallet-badge">
+            <img src="images/plin.png" alt="Plin" class="pay-wallet-badge">
+          </div>
+        </div>
+
+        <nav class="footer-links" aria-label="Enlaces del footer">
+          <div class="column">
+            <h4>Explora</h4>
+            @if (esCliente()) {
+              <a routerLink="/cliente">Mi Portal</a>
+              <a routerLink="/cliente/reservas">Mis Reservas</a>
+              <a routerLink="/catalogo">Catálogo de Vehículos</a>
+              <a routerLink="/reservar">Reservar</a>
+            } @else {
+              <a routerLink="/catalogo">Catálogo de Vehículos</a>
+              <a routerLink="/nosotros">Nosotros</a>
+              <a routerLink="/contacto">Contáctanos</a>
+              <a routerLink="/login">Iniciar sesión</a>
+              <a routerLink="/reservar">Reservar</a>
+            }
+          </div>
+
+          <div class="column">
+            <h4>Información Legal</h4>
+            <a href="#">Políticas de privacidad</a>
+            <a href="#">Términos y condiciones</a>
+            <a href="#">Libro de reclamaciones</a>
+          </div>
+
+          <div class="column contact-col">
+            <h4>Información de contacto</h4>
+            <p class="contact-line">
+              <i class="fa-solid fa-phone" aria-hidden="true"></i>
+              <span>+51 959 137 712</span>
+            </p>
+            <p class="contact-line">
+              <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+              <a href="mailto:info@paulcars.com" class="contact-link">info&#64;paulcars.com</a>
+            </p>
+            <p class="contact-line">
+              <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+              <span>Lima, Perú</span>
+            </p>
+            <a class="whatsapp-btn" href="https://wa.me/51959137712" target="_blank" rel="noopener"
+              aria-label="Contactar por WhatsApp">
+              <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+            </a>
+          </div>
+        </nav>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      &copy; 2026 Paul Car's. Todos los derechos reservados.
+    </div>
+  </footer>
+}
