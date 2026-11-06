@@ -1,0 +1,97 @@
+<section class="admin-page">
+  <div class="admin-hero">
+    <div class="header-left">
+      <div class="role-badge">
+        <span>ADMINISTRACIÓN GENERAL &bull; PAUL CAR'S</span>
+      </div>
+      <h1>Panel de Control</h1>
+      <p class="description">
+        Supervisa los ingresos, gestiona los roles y empleados, audita los catálogos base y controla la operación completa del negocio.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <a mat-flat-button class="btn-primary-action" routerLink="/admin/reportes">
+        <mat-icon>analytics</mat-icon>
+        Ver reportes
+      </a>
+      <a mat-stroked-button class="btn-secondary-action" routerLink="/alquileres">
+        <mat-icon>assignment</mat-icon>
+        Alquileres
+      </a>
+    </div>
+  </div>
+
+  <section class="summary-grid" aria-label="Métricas globales">
+    <article class="metric-card">
+      <div class="icon-bubble bubble-navy">
+        <mat-icon>directions_car</mat-icon>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Flota total</span>
+        <strong class="metric-value">{{ vehiculos() }}</strong>
+        <span class="metric-hint">Vehículos registrados</span>
+      </div>
+    </article>
+
+    <article class="metric-card">
+      <div class="icon-bubble bubble-emerald">
+        <mat-icon>groups</mat-icon>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Clientes en sistema</span>
+        <strong class="metric-value">{{ clientes() }}</strong>
+        <span class="metric-hint">Clientes activos registrados</span>
+      </div>
+    </article>
+
+    <article class="metric-card">
+      <div class="icon-bubble bubble-amber">
+        <mat-icon>pending_actions</mat-icon>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Alquileres activos</span>
+        <strong class="metric-value">{{ alquileresActivos() }}</strong>
+        <span class="metric-hint">Contratos en vigencia</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="admin-grid">
+    <article class="admin-card">
+      <div class="admin-icon-box box-blue">
+        <mat-icon>badge</mat-icon>
+      </div>
+      <h2>Usuarios del Sistema</h2>
+      <p>Crea, edita o desactiva asesores y administradores con control de acceso interno.</p>
+      <a mat-flat-button class="btn-card-action" routerLink="/admin/usuarios">
+        <span>Gestionar usuarios</span>
+        <mat-icon>arrow_forward</mat-icon>
+      </a>
+    </article>
+
+    <article class="admin-card">
+      <div class="admin-icon-box box-amber">
+        <mat-icon>tune</mat-icon>
+      </div>
+      <h2>Catálogos Base</h2>
+      <p>Administra marcas, modelos, tipos de carrocería, combustibles y métodos de pago de la agencia.</p>
+      <a mat-flat-button class="btn-card-action" routerLink="/admin/catalogo">
+        <span>Gestionar catálogos</span>
+        <mat-icon>arrow_forward</mat-icon>
+      </a>
+    </article>
+
+    <article class="admin-card">
+      <div class="admin-icon-box box-emerald">
+        <mat-icon>monitoring</mat-icon>
+      </div>
+      <h2>Reportes y Finanzas</h2>
+      <p>Consulta ingresos totales filtrados por rango de fechas, ranking de flota más alquilada y pagos pendientes.</p>
+      <a mat-flat-button class="btn-card-action" routerLink="/admin/reportes">
+        <span>Ver reportes</span>
+        <mat-icon>arrow_forward</mat-icon>
+      </a>
+    </article>
+  </section>
+</section>
