@@ -1,0 +1,274 @@
+.page {
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 36px 36px 64px;
+  box-sizing: border-box;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.header-texts {
+  flex: 1;
+  min-width: 300px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #1565c0;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.description {
+  margin: 8px 0 0;
+  font-size: 15px;
+  color: #667085;
+  max-width: 680px;
+  line-height: 1.5;
+}
+
+.header-search {
+  min-width: 320px;
+}
+
+.search-field {
+  width: 100%;
+  margin-bottom: -1.25em;
+}
+
+.cargando-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px;
+  color: #64748b;
+  font-size: 0.95rem;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.tabs-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.tab-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.tab-text {
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.tab-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.mat-mdc-tab.mdc-tab--active .tab-badge {
+  background: #0d1b3e;
+  color: #fcdc3b;
+}
+
+.tab-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.barra-agregar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: #f8fafc;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.barra-agregar.grid-modelo {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr auto;
+  margin-bottom: 16px;
+}
+
+.filtros-modelos-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.filtro-marca-field {
+  min-width: 280px;
+  margin-bottom: -1.25em;
+}
+
+.btn-limpiar-filtro {
+  height: 48px;
+  font-weight: 700 !important;
+}
+
+.input-agregar {
+  flex: 1;
+  margin-bottom: -1.25em;
+}
+
+.btn-agregar {
+  background: #0d1b3e !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  height: 48px;
+  padding: 0 18px !important;
+}
+
+.tabla-wrapper {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.catalogo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.catalogo-table th {
+  background: #f8fafc;
+  color: #475569;
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.catalogo-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.catalogo-table tr:hover td {
+  background: #fbfcfe;
+}
+
+.col-id {
+  font-family: monospace;
+  font-weight: 700;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.item-nombre {
+  color: #0f172a;
+  font-size: 0.92rem;
+  font-weight: 400;
+}
+
+.marca-texto,
+.marca-pill {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.categoria-tag {
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.combustible-pill {
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.edicion-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-field {
+  flex: 1;
+  margin-bottom: -1.25em;
+}
+
+.btn-edit {
+  color: #475569 !important;
+  transition: color 0.15s ease, background-color 0.15s ease !important;
+}
+
+.btn-edit:hover {
+  color: #0f172a !important;
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+.catalogo-table td button {
+  color: #475569 !important;
+  transition: color 0.15s ease, background-color 0.15s ease !important;
+}
+
+.catalogo-table td button:hover {
+  color: #0f172a !important;
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+.edicion-row button {
+  color: #475569 !important;
+}
+
+.edicion-row button:hover {
+  color: #0f172a !important;
+}
+
+.sin-resultados {
+  text-align: center;
+  padding: 32px 16px;
+  color: #94a3b8;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 768px) {
+  .barra-agregar.grid-modelo {
+    grid-template-columns: 1fr;
+  }
+}

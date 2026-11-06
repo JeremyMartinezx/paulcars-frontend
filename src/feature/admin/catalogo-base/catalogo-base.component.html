@@ -1,0 +1,370 @@
+<section class="page">
+  <app-back-button></app-back-button>
+
+  <header class="page-header">
+    <div class="header-texts">
+      <p class="eyebrow">Administración</p>
+      <h1>Catálogos Base del Sistema</h1>
+      <p class="description">
+        Gestión de parámetros maestros: Marcas, Modelos comerciales, Categorías vehiculares y Tipos de combustible para la flota de Paul Car's.
+      </p>
+    </div>
+
+    <!-- Barra de Búsqueda Rápida Instantánea -->
+    <div class="header-search">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Búsqueda rápida en catálogo</mat-label>
+        <input matInput [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" placeholder="Ej: Toyota, SUV, Gasolina...">
+        <mat-icon matPrefix>search</mat-icon>
+        @if (busqueda()) {
+          <button mat-icon-button matSuffix (click)="busqueda.set('')" matTooltip="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+    </div>
+  </header>
+
+  @if (!catalogos) {
+    <div class="cargando-box">
+      <mat-icon class="spin-icon">hourglass_top</mat-icon>
+      <span>Cargando catálogo maestro...</span>
+    </div>
+  } @else {
+    <mat-tab-group class="tabs-card" animationDuration="200ms">
+
+      <!-- PESTAÑA 1: MARCAS -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">branding_watermark</mat-icon>
+          <span class="tab-text">Marcas</span>
+          <span class="tab-badge">{{ catalogos.marcas.length }}</span>
+        </ng-template>
+
+        <div class="tab-content">
+          @if (esAdmin()) {
+            <div class="barra-agregar">
+              <mat-form-field appearance="outline" class="input-agregar">
+                <mat-label>Nueva marca comercial</mat-label>
+                <input matInput [(ngModel)]="nuevaMarca" placeholder="Ej: Honda, Nissan, Hyundai" (keyup.enter)="agregarSimple('marca')">
+              </mat-form-field>
+              <button mat-flat-button color="primary" class="btn-agregar" (click)="agregarSimple('marca')" [disabled]="!nuevaMarca.trim()">
+                <mat-icon>add</mat-icon>
+                <span>Agregar Marca</span>
+              </button>
+            </div>
+          }
+
+          <div class="tabla-wrapper">
+            <table class="catalogo-table" aria-label="Tabla de Marcas">
+              <thead>
+                <tr>
+                  <th scope="col">NOMBRE DE LA MARCA</th>
+                  <th scope="col" style="width: 140px; text-align: center;">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (marca of marcasFiltradas(); track marca.idMarca) {
+                  <tr>
+                    <td>
+                      @if (editandoSimple?.tipo === 'marca' && editandoSimple?.id === marca.idMarca) {
+                        <div class="edicion-row">
+                          <mat-form-field appearance="outline" class="inline-field">
+                            <input matInput [(ngModel)]="editandoSimple!.valor" (keyup.enter)="guardarEdicionSimple()">
+                          </mat-form-field>
+                          <button mat-icon-button color="primary" (click)="guardarEdicionSimple()" matTooltip="Guardar cambios">
+                            <mat-icon>check</mat-icon>
+                          </button>
+                          <button mat-icon-button (click)="cancelarEdicionSimple()" matTooltip="Cancelar">
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        </div>
+                      } @else {
+                        <span class="item-nombre">{{ marca.nombreMarca }}</span>
+                      }
+                    </td>
+                    <td style="text-align: center;">
+                      @if (esAdmin() && editandoSimple?.id !== marca.idMarca) {
+                        <button mat-icon-button class="btn-edit" (click)="iniciarEdicionSimple('marca', marca.idMarca, marca.nombreMarca)" matTooltip="Editar marca">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+                @if (marcasFiltradas().length === 0) {
+                  <tr>
+                    <td colspan="2" class="sin-resultados">
+                      No se encontraron marcas con el filtro "{{ busqueda() }}".
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- PESTAÑA 2: MODELOS -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">directions_car</mat-icon>
+          <span class="tab-text">Modelos</span>
+          <span class="tab-badge">{{ catalogos.modelos.length }}</span>
+        </ng-template>
+
+        <div class="tab-content">
+          @if (esAdmin()) {
+            <div class="barra-agregar grid-modelo">
+              <mat-form-field appearance="outline">
+                <mat-label>Nombre del modelo</mat-label>
+                <input matInput [(ngModel)]="nuevoModeloNombre" placeholder="Ej: Civic, Frontier, Tucson">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Marca asociada</mat-label>
+                <mat-select [(ngModel)]="nuevoModeloMarcaId">
+                  @for (marca of catalogos.marcas; track marca.idMarca) {
+                    <mat-option [value]="marca.idMarca">{{ marca.nombreMarca }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <button mat-flat-button color="primary" class="btn-agregar" (click)="agregarModelo()" [disabled]="!nuevoModeloNombre.trim() || !nuevoModeloMarcaId">
+                <mat-icon>add</mat-icon>
+                <span>Agregar Modelo</span>
+              </button>
+            </div>
+          }
+
+          <div class="filtros-modelos-toolbar">
+            <mat-form-field appearance="outline" class="filtro-marca-field">
+              <mat-label>Filtrar por marca</mat-label>
+              <mat-select [ngModel]="filtroMarcaModelo()" (ngModelChange)="filtroMarcaModelo.set($event)">
+                <mat-option value="TODAS">Todas las marcas</mat-option>
+                @for (marca of catalogos.marcas; track marca.idMarca) {
+                  <mat-option [value]="marca.idMarca">{{ marca.nombreMarca }}</mat-option>
+                }
+              </mat-select>
+              <mat-icon matPrefix>filter_alt</mat-icon>
+            </mat-form-field>
+
+            @if (filtroMarcaModelo() !== 'TODAS') {
+              <button mat-button color="primary" class="btn-limpiar-filtro" (click)="filtroMarcaModelo.set('TODAS')">
+                <mat-icon>clear</mat-icon>
+                <span>Mostrar todas</span>
+              </button>
+            }
+          </div>
+
+          <div class="tabla-wrapper">
+            <table class="catalogo-table" aria-label="Tabla de Modelos">
+              <thead>
+                <tr>
+                  <th scope="col">MODELO COMERCIAL</th>
+                  <th scope="col">MARCA ASOCIADA</th>
+                  <th scope="col" style="width: 140px; text-align: center;">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (modelo of modelosFiltrados(); track modelo.idModelo) {
+                  <tr>
+                    <td>
+                      @if (editandoModelo?.id === modelo.idModelo) {
+                        <mat-form-field appearance="outline" class="inline-field">
+                          <input matInput [(ngModel)]="editandoModelo!.nombre" (keyup.enter)="guardarEdicionModelo()">
+                        </mat-form-field>
+                      } @else {
+                        <span class="item-nombre">{{ modelo.modelo }}</span>
+                      }
+                    </td>
+                    <td>
+                      @if (editandoModelo?.id === modelo.idModelo) {
+                        <div class="edicion-row">
+                          <mat-form-field appearance="outline" class="inline-field">
+                            <mat-select [(ngModel)]="editandoModelo!.idMarca">
+                              @for (marca of catalogos.marcas; track marca.idMarca) {
+                                <mat-option [value]="marca.idMarca">{{ marca.nombreMarca }}</mat-option>
+                              }
+                            </mat-select>
+                          </mat-form-field>
+                          <button mat-icon-button color="primary" (click)="guardarEdicionModelo()" matTooltip="Guardar cambios">
+                            <mat-icon>check</mat-icon>
+                          </button>
+                          <button mat-icon-button (click)="cancelarEdicionModelo()" matTooltip="Cancelar">
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        </div>
+                      } @else {
+                        <span class="marca-texto">{{ modelo.marca?.nombreMarca }}</span>
+                      }
+                    </td>
+                    <td style="text-align: center;">
+                      @if (esAdmin() && editandoModelo?.id !== modelo.idModelo) {
+                        <button mat-icon-button class="btn-edit" (click)="iniciarEdicionModelo(modelo.idModelo, modelo.modelo, modelo.marca.idMarca)" matTooltip="Editar modelo">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+                @if (modelosFiltrados().length === 0) {
+                  <tr>
+                    <td colspan="3" class="sin-resultados">
+                      No se encontraron modelos con los filtros seleccionados.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- PESTAÑA 3: TIPOS / CATEGORÍAS -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">category</mat-icon>
+          <span class="tab-text">Tipos / Categorías</span>
+          <span class="tab-badge">{{ catalogos.tiposVehiculo.length }}</span>
+        </ng-template>
+
+        <div class="tab-content">
+          @if (esAdmin()) {
+            <div class="barra-agregar">
+              <mat-form-field appearance="outline" class="input-agregar">
+                <mat-label>Nueva categoría (ej: SEDAN, SUV, PICKUP)</mat-label>
+                <input matInput [(ngModel)]="nuevoTipo" placeholder="Ej: COUPE, CONVERTIBLE" (keyup.enter)="agregarSimple('tipo')">
+              </mat-form-field>
+              <button mat-flat-button color="primary" class="btn-agregar" (click)="agregarSimple('tipo')" [disabled]="!nuevoTipo.trim()">
+                <mat-icon>add</mat-icon>
+                <span>Agregar Categoría</span>
+              </button>
+            </div>
+          }
+
+          <div class="tabla-wrapper">
+            <table class="catalogo-table" aria-label="Tabla de Tipos de Vehículo">
+              <thead>
+                <tr>
+                  <th scope="col">TIPO / CATEGORÍA COMERCIAL</th>
+                  <th scope="col" style="width: 140px; text-align: center;">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (tipo of tiposFiltrados(); track tipo.idTipo) {
+                  <tr>
+                    <td>
+                      @if (editandoSimple?.tipo === 'tipo' && editandoSimple?.id === tipo.idTipo) {
+                        <div class="edicion-row">
+                          <mat-form-field appearance="outline" class="inline-field">
+                            <input matInput [(ngModel)]="editandoSimple!.valor" (keyup.enter)="guardarEdicionSimple()">
+                          </mat-form-field>
+                          <button mat-icon-button color="primary" (click)="guardarEdicionSimple()" matTooltip="Guardar cambios">
+                            <mat-icon>check</mat-icon>
+                          </button>
+                          <button mat-icon-button (click)="cancelarEdicionSimple()" matTooltip="Cancelar">
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        </div>
+                      } @else {
+                        <span class="item-nombre">{{ tipo.nombreTipo }}</span>
+                      }
+                    </td>
+                    <td style="text-align: center;">
+                      @if (esAdmin() && editandoSimple?.id !== tipo.idTipo) {
+                        <button mat-icon-button class="btn-edit" (click)="iniciarEdicionSimple('tipo', tipo.idTipo, tipo.nombreTipo)" matTooltip="Editar categoría">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+                @if (tiposFiltrados().length === 0) {
+                  <tr>
+                    <td colspan="2" class="sin-resultados">
+                      No se encontraron tipos de vehículo con el filtro "{{ busqueda() }}".
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- PESTAÑA 4: COMBUSTIBLES -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">local_gas_station</mat-icon>
+          <span class="tab-text">Combustibles</span>
+          <span class="tab-badge">{{ catalogos.combustibles.length }}</span>
+        </ng-template>
+
+        <div class="tab-content">
+          @if (esAdmin()) {
+            <div class="barra-agregar">
+              <mat-form-field appearance="outline" class="input-agregar">
+                <mat-label>Nuevo tipo de combustible</mat-label>
+                <input matInput [(ngModel)]="nuevoCombustible" placeholder="Ej: HÍBRIDO, GLP, GNV" (keyup.enter)="agregarSimple('combustible')">
+              </mat-form-field>
+              <button mat-flat-button color="primary" class="btn-agregar" (click)="agregarSimple('combustible')" [disabled]="!nuevoCombustible.trim()">
+                <mat-icon>add</mat-icon>
+                <span>Agregar Combustible</span>
+              </button>
+            </div>
+          }
+
+          <div class="tabla-wrapper">
+            <table class="catalogo-table" aria-label="Tabla de Combustibles">
+              <thead>
+                <tr>
+                  <th scope="col">TIPO DE COMBUSTIBLE</th>
+                  <th scope="col" style="width: 140px; text-align: center;">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (combustible of combustiblesFiltrados(); track combustible.idCombustible) {
+                  <tr>
+                    <td>
+                      @if (editandoSimple?.tipo === 'combustible' && editandoSimple?.id === combustible.idCombustible) {
+                        <div class="edicion-row">
+                          <mat-form-field appearance="outline" class="inline-field">
+                            <input matInput [(ngModel)]="editandoSimple!.valor" (keyup.enter)="guardarEdicionSimple()">
+                          </mat-form-field>
+                          <button mat-icon-button color="primary" (click)="guardarEdicionSimple()" matTooltip="Guardar cambios">
+                            <mat-icon>check</mat-icon>
+                          </button>
+                          <button mat-icon-button (click)="cancelarEdicionSimple()" matTooltip="Cancelar">
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        </div>
+                      } @else {
+                        <span class="item-nombre">{{ combustible.nombreCombustible }}</span>
+                      }
+                    </td>
+                    <td style="text-align: center;">
+                      @if (esAdmin() && editandoSimple?.id !== combustible.idCombustible) {
+                        <button mat-icon-button class="btn-edit" (click)="iniciarEdicionSimple('combustible', combustible.idCombustible, combustible.nombreCombustible)" matTooltip="Editar combustible">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+                @if (combustiblesFiltrados().length === 0) {
+                  <tr>
+                    <td colspan="2" class="sin-resultados">
+                      No se encontraron combustibles con el filtro "{{ busqueda() }}".
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+  }
+</section>
