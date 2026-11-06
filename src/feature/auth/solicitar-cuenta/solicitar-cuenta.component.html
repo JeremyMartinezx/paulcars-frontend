@@ -1,0 +1,171 @@
+<section class="request-page">
+  <header class="request-header">
+    <a routerLink="/" class="brand">
+      <img src="images/logo-white.png" alt="Paul Car's" class="brand-logo" />
+    </a>
+    <a routerLink="/" class="back-link">
+      <mat-icon>arrow_back</mat-icon>
+      <span>Volver al inicio</span>
+    </a>
+  </header>
+
+  <main class="request-content">
+    <article class="request-card">
+      <div class="card-logo-wrap">
+        <img src="images/logo.png" alt="Paul Car's Alquiler de Vehículos" class="card-logo" />
+      </div>
+
+      <h1>Crea tu cuenta</h1>
+      <p class="request-subtitle">Regístrate en Paul Car's para solicitar reservas y gestionar tus alquileres de vehículos.</p>
+
+      @if (exito()) {
+        <div class="success-alert">
+          <strong>¡Cuenta creada exitosamente!</strong>
+          <span>Iniciando sesión automáticamente y redirigiendo al catálogo...</span>
+        </div>
+      }
+
+      @if (error()) {
+        <div class="error-banner">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ error() }}</span>
+        </div>
+      }
+
+      <form [formGroup]="registroForm" (ngSubmit)="registrar()" class="register-form" autocomplete="off">
+        <div class="form-row-2">
+          <mat-form-field appearance="outline" class="form-field-item" hideRequiredMarker>
+            <mat-label>Nombres</mat-label>
+            <input matInput formControlName="nombres" autocomplete="given-name">
+            @if (registroForm.controls.nombres.hasError('required') && registroForm.controls.nombres.touched) {
+              <mat-error>Los nombres son obligatorios.</mat-error>
+            }
+            @if (registroForm.controls.nombres.hasError('minlength')) {
+              <mat-error>Mínimo 2 caracteres.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field-item" hideRequiredMarker>
+            <mat-label>Apellidos</mat-label>
+            <input matInput formControlName="apellidos" autocomplete="family-name">
+            @if (registroForm.controls.apellidos.hasError('required') && registroForm.controls.apellidos.touched) {
+              <mat-error>Los apellidos son obligatorios.</mat-error>
+            }
+            @if (registroForm.controls.apellidos.hasError('minlength')) {
+              <mat-error>Mínimo 2 caracteres.</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="form-field-full" hideRequiredMarker>
+          <mat-label>Número telefónico</mat-label>
+          <input
+            matInput
+            type="tel"
+            inputmode="numeric"
+            maxlength="9"
+            formControlName="telefono"
+            (input)="onTelefonoInput($event)"
+            autocomplete="tel"
+          >
+          @if (registroForm.controls.telefono.hasError('required') && registroForm.controls.telefono.touched) {
+            <mat-error>El número telefónico es obligatorio.</mat-error>
+          }
+          @if (registroForm.controls.telefono.hasError('pattern') && registroForm.controls.telefono.touched) {
+            <mat-error>Debe contener exactamente 9 dígitos.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field-full" hideRequiredMarker>
+          <mat-label>Correo electrónico</mat-label>
+          <input matInput type="email" formControlName="email" autocomplete="email">
+          @if (registroForm.controls.email.hasError('required') && registroForm.controls.email.touched) {
+            <mat-error>El correo electrónico es obligatorio.</mat-error>
+          }
+          @if (registroForm.controls.email.hasError('email')) {
+            <mat-error>Ingresa un correo electrónico válido.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field-full" hideRequiredMarker>
+          <mat-label>Contraseña</mat-label>
+          <input
+            matInput
+            [type]="ocultarPassword ? 'password' : 'text'"
+            formControlName="password"
+            autocomplete="new-password"
+          >
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            aria-label="Mostrar u ocultar contraseña"
+            (click)="ocultarPassword = !ocultarPassword"
+            class="toggle-pass-btn"
+          >
+            <mat-icon>{{ ocultarPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (registroForm.controls.password.hasError('required') && registroForm.controls.password.touched) {
+            <mat-error>La contraseña es obligatoria.</mat-error>
+          }
+          @if (registroForm.controls.password.hasError('minlength')) {
+            <mat-error>Debe tener al menos 6 caracteres.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field-full" hideRequiredMarker>
+          <mat-label>Confirmar contraseña</mat-label>
+          <input
+            matInput
+            [type]="ocultarConfirmPassword ? 'password' : 'text'"
+            formControlName="confirmPassword"
+            autocomplete="new-password"
+          >
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            aria-label="Mostrar u ocultar confirmación de contraseña"
+            (click)="ocultarConfirmPassword = !ocultarConfirmPassword"
+            class="toggle-pass-btn"
+          >
+            <mat-icon>{{ ocultarConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (registroForm.controls.confirmPassword.hasError('required') && registroForm.controls.confirmPassword.touched) {
+            <mat-error>Confirma tu contraseña.</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="terms-container">
+          <mat-checkbox formControlName="terminos" color="primary">
+            Acepto los términos y condiciones
+          </mat-checkbox>
+          @if (registroForm.controls.terminos.hasError('required') && registroForm.controls.terminos.touched) {
+            <div class="terms-error">Debes aceptar los términos y condiciones para continuar.</div>
+          }
+        </div>
+
+        <button mat-flat-button class="submit-btn" type="submit" [disabled]="cargando()">
+          @if (cargando()) {
+            <mat-spinner diameter="22" style="margin: 0 auto;"></mat-spinner>
+          } @else {
+            Crear cuenta
+          }
+        </button>
+      </form>
+
+      <div class="card-divider">
+        <span>o</span>
+      </div>
+
+      <p class="login-redirect-text">
+        ¿Ya tienes una cuenta registrada?
+        <a routerLink="/login">Inicia sesión aquí</a>
+      </p>
+    </article>
+  </main>
+
+  <footer class="request-footer">
+    © 2026 Paul Car's &bull; Sistema de alquiler de vehículos &bull; Todos los derechos reservados
+  </footer>
+</section>

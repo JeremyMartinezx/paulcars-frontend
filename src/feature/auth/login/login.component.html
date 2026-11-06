@@ -1,0 +1,284 @@
+<section class="login-page">
+  <header class="login-header">
+    <a routerLink="/" class="brand">
+      <img src="images/logo-white.png" alt="Paul Car's" class="brand-logo" />
+    </a>
+    <a routerLink="/" class="back-link">
+      <mat-icon>arrow_back</mat-icon>
+      <span>Volver al inicio</span>
+    </a>
+  </header>
+
+  <main class="login-content">
+    <div class="login-card">
+      <div class="login-logo-wrap">
+        <img src="images/logo.png" alt="Paul Car's Alquiler de Vehículos" class="card-logo" />
+      </div>
+
+      <h1>Iniciar Sesión</h1>
+      <p class="login-subtitle">Ingresa tus credenciales para acceder a la plataforma</p>
+
+      <form [formGroup]="loginForm" (ngSubmit)="iniciarSesion()" autocomplete="off">
+        <mat-form-field appearance="outline" class="login-field" hideRequiredMarker>
+          <mat-label>Correo electrónico</mat-label>
+          <mat-icon matPrefix class="field-icon">mail_outline</mat-icon>
+          <input matInput type="text" formControlName="username" autocomplete="email" placeholder="ejemplo@correo.com">
+
+          @if (loginForm.controls.username.hasError('required')) {
+            <mat-error>El correo electrónico es obligatorio.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="login-field" hideRequiredMarker>
+          <mat-label>Contraseña</mat-label>
+          <mat-icon matPrefix class="field-icon">lock_outline</mat-icon>
+          <input
+            matInput
+            [type]="ocultarPassword ? 'password' : 'text'"
+            formControlName="password"
+            autocomplete="new-password"
+          >
+
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            aria-label="Mostrar u ocultar contraseña"
+            (click)="ocultarPassword = !ocultarPassword"
+            class="toggle-pass-btn"
+          >
+            <mat-icon>{{ ocultarPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+
+          @if (loginForm.controls.password.hasError('required')) {
+            <mat-error>La contraseña es obligatoria.</mat-error>
+          }
+
+          @if (loginForm.controls.password.hasError('minlength')) {
+            <mat-error>Debe tener al menos 6 caracteres.</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="login-options-row">
+          <button type="button" class="btn-olvide-pass" (click)="abrirModalRecuperar()">
+            ¿Olvidaste tu contraseña?
+          </button>
+        </div>
+
+        @if (error) {
+          <div class="error-banner">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ error }}</span>
+          </div>
+        }
+
+        <button class="login-button" mat-flat-button type="submit" [disabled]="cargando">
+          @if (cargando) {
+            <mat-spinner diameter="22"></mat-spinner>
+          } @else {
+            <span>Iniciar sesión</span>
+          }
+        </button>
+      </form>
+
+      <div class="card-divider">
+        <span>o</span>
+      </div>
+
+      <p class="register-text">
+        ¿Eres cliente nuevo y no tienes cuenta?
+        <a routerLink="/solicitar-cuenta">Regístrate aquí</a>
+      </p>
+    </div>
+  </main>
+
+  @if (modalRecuperarAbierto) {
+    <div class="modal-backdrop" (click)="cerrarModalRecuperar()">
+      <div class="modal-card modal-card-recuperar" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-header-brand">
+            <mat-icon>lock_reset</mat-icon>
+            <div>
+              <h3>
+                @if (pasoRecuperar === 1) {
+                  ¿Olvidaste tu contraseña?
+                } @else if (pasoRecuperar === 2) {
+                  Verificar Código
+                } @else {
+                  Nueva Contraseña
+                }
+              </h3>
+              <span>
+                @if (pasoRecuperar === 1) {
+                  Paso 1 de 3 &bull; Ingresa tu correo
+                } @else if (pasoRecuperar === 2) {
+                  Paso 2 de 3 &bull; Valida el código
+                } @else {
+                  Paso 3 de 3 &bull; Crea tu nueva clave
+                }
+              </span>
+            </div>
+          </div>
+          <button mat-icon-button type="button" (click)="cerrarModalRecuperar()" aria-label="Cerrar modal">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <div class="modal-body">
+          @if (recuperarError) {
+            <div class="modal-alert modal-alert-error">
+              <mat-icon>error_outline</mat-icon>
+              <span>{{ recuperarError }}</span>
+            </div>
+          }
+
+          @if (recuperarExito) {
+            <div class="modal-alert modal-alert-success">
+              <mat-icon>check_circle</mat-icon>
+              <span>{{ recuperarExito }}</span>
+            </div>
+          }
+
+          @if (recuperarAviso) {
+            <div class="modal-alert modal-alert-warning">
+              <mat-icon>info</mat-icon>
+              <span>{{ recuperarAviso }}</span>
+            </div>
+          }
+
+          @if (pasoRecuperar === 1) {
+            <div class="recuperar-step-content">
+              <p class="recuperar-info-text">
+                Ingresa el correo electrónico asociado a tu cuenta. Te enviaremos un código de seguridad de 6 dígitos para validar tu identidad.
+              </p>
+
+              <label class="modal-field">
+                <span>Correo electrónico registrado</span>
+                <input
+                  type="email"
+                  [(ngModel)]="recuperarEmail"
+                  placeholder="ejemplo@correo.com"
+                  (keyup.enter)="enviarCodigoRecuperacion()"
+                >
+              </label>
+
+              <div class="modal-actions-bar">
+                <button type="button" mat-stroked-button class="btn-modal-cancel" (click)="cerrarModalRecuperar()">
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  mat-flat-button
+                  class="btn-modal-primary"
+                  (click)="enviarCodigoRecuperacion()"
+                  [disabled]="recuperarCargando"
+                >
+                  <mat-icon>send</mat-icon>
+                  <span>{{ recuperarCargando ? 'Enviando código...' : 'Enviar código de verificación' }}</span>
+                </button>
+              </div>
+            </div>
+          } @else if (pasoRecuperar === 2) {
+            <div class="recuperar-step-content">
+              <div class="correo-verif-box">
+                <mat-icon>{{ recuperarExito ? 'mark_email_read' : 'lock_reset' }}</mat-icon>
+                <div>
+                  <strong>{{ recuperarExito ? 'Código enviado a tu correo' : 'Validación de seguridad' }}</strong>
+                  <p>
+                    @if (recuperarExito) {
+                      Hemos enviado un código de 6 dígitos a <strong class="text-email-dest">{{ recuperarEmail }}</strong>. Revisa tu bandeja de entrada o spam.
+                    } @else {
+                      Ingresa el código de 6 dígitos para validar tu cuenta <strong class="text-email-dest">{{ recuperarEmail }}</strong>.
+                    }
+                  </p>
+                </div>
+              </div>
+
+              <label class="modal-field">
+                <span>Código de verificación (6 dígitos)</span>
+                <input
+                  type="text"
+                  [(ngModel)]="recuperarCodigo"
+                  maxlength="6"
+                  inputmode="numeric"
+                  placeholder=""
+                  class="input-codigo-destacado"
+                  (keyup.enter)="verificarCodigoRecuperacion()"
+                >
+              </label>
+
+              <div class="reenviar-row">
+                <button type="button" class="btn-link-action" (click)="enviarCodigoRecuperacion()" [disabled]="recuperarCargando">
+                  ¿No recibiste el código? Reenviar código
+                </button>
+              </div>
+
+              <div class="modal-actions-bar">
+                <button type="button" mat-stroked-button class="btn-modal-cancel" (click)="pasoRecuperar = 1">
+                  Volver
+                </button>
+                <button
+                  type="button"
+                  mat-flat-button
+                  class="btn-modal-primary"
+                  (click)="verificarCodigoRecuperacion()"
+                  [disabled]="recuperarCargando"
+                >
+                  <mat-icon>verified</mat-icon>
+                  <span>{{ recuperarCargando ? 'Validando...' : 'Validar código' }}</span>
+                </button>
+              </div>
+            </div>
+          } @else if (pasoRecuperar === 3) {
+            <div class="recuperar-step-content">
+              <p class="recuperar-info-text">
+                Código validado con éxito. Ahora define tu nueva contraseña de acceso.
+              </p>
+
+              <label class="modal-field">
+                <span>Nueva contraseña</span>
+                <input
+                  type="password"
+                  [(ngModel)]="recuperarPasswordNuevo"
+                  placeholder="Mínimo 4 caracteres"
+                  autocomplete="new-password"
+                >
+              </label>
+
+              <label class="modal-field">
+                <span>Confirmar nueva contraseña</span>
+                <input
+                  type="password"
+                  [(ngModel)]="recuperarPasswordConfirmar"
+                  placeholder="Repite la nueva contraseña"
+                  autocomplete="new-password"
+                  (keyup.enter)="guardarNuevoPassword()"
+                >
+              </label>
+
+              <div class="modal-actions-bar">
+                <button type="button" mat-stroked-button class="btn-modal-cancel" (click)="cerrarModalRecuperar()">
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  mat-flat-button
+                  class="btn-modal-primary"
+                  (click)="guardarNuevoPassword()"
+                  [disabled]="recuperarCargando"
+                >
+                  <mat-icon>check_circle</mat-icon>
+                  <span>{{ recuperarCargando ? 'Guardando...' : 'Guardar nueva contraseña' }}</span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <footer class="login-footer">
+    © 2026 Paul Car's &bull; Sistema de alquiler de vehículos &bull; Todos los derechos reservados
+  </footer>
+</section>
