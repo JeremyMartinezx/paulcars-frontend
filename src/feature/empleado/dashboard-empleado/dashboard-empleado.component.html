@@ -1,0 +1,99 @@
+<section class="employee-page">
+  <div class="employee-header">
+    <div class="header-left">
+      <div class="role-badge">
+        <span>COUNTER OPERATIVO &bull; PAUL CAR'S</span>
+      </div>
+      <h1>Gestión Operativa de Agencia</h1>
+      <p class="description">
+        Administra clientes, contratos de alquiler, cobro de pagos y disponibilidad de flota desde este terminal.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <a mat-flat-button class="btn-primary-action" routerLink="/empleado/alquileres">
+        <mat-icon>add_circle</mat-icon>
+        Nuevo alquiler
+      </a>
+      <a mat-stroked-button class="btn-secondary-action" routerLink="/vehiculos">
+        <mat-icon>directions_car</mat-icon>
+        Ver vehículos
+      </a>
+    </div>
+  </div>
+
+
+
+  <section class="summary-grid" aria-label="Indicadores operativos">
+    <article class="metric-card">
+      <div class="icon-bubble bubble-emerald">
+        <mat-icon>directions_car</mat-icon>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Vehículos listos</span>
+        <strong class="metric-value">{{ vehiculosDisponibles() }}</strong>
+        <span class="metric-hint">Unidades con estado DISPONIBLE</span>
+      </div>
+    </article>
+
+    <article class="metric-card">
+      <div class="icon-bubble bubble-navy">
+        <mat-icon>groups</mat-icon>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Clientes en base</span>
+        <strong class="metric-value">{{ clientesRegistrados() }}</strong>
+        <span class="metric-hint">Clientes validados con DNI/licencia</span>
+      </div>
+    </article>
+
+    <article class="metric-card">
+      <div class="icon-bubble bubble-amber">
+        <mat-icon>assignment</mat-icon>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Alquileres activos</span>
+        <strong class="metric-value">{{ alquileresActivos() }}</strong>
+        <span class="metric-hint">Contratos en circulación</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="actions-grid">
+    <article class="action-card">
+      <div class="action-icon-box box-indigo">
+        <mat-icon>garage</mat-icon>
+      </div>
+      <h2>Flota de Vehículos</h2>
+      <p>Revisa la disponibilidad de unidades y actualiza su estado operativo (disponible, mantenimiento, limpieza). Los catálogos base están en modo lectura.</p>
+      <a mat-flat-button class="btn-card-action" routerLink="/vehiculos">
+        <span>Ver flota</span>
+        <mat-icon>arrow_forward</mat-icon>
+      </a>
+    </article>
+
+    <article class="action-card">
+      <div class="action-icon-box box-blue">
+        <mat-icon>person_add</mat-icon>
+      </div>
+      <h2>Clientes</h2>
+      <p>Registra nuevos clientes con DNI y licencia de conducir, o actualiza datos de contacto existentes.</p>
+      <a mat-flat-button class="btn-card-action" routerLink="/clientes">
+        <span>Gestionar clientes</span>
+        <mat-icon>arrow_forward</mat-icon>
+      </a>
+    </article>
+
+    <article class="action-card">
+      <div class="action-icon-box box-amber">
+        <mat-icon>car_rental</mat-icon>
+      </div>
+      <h2>Alquileres y Pagos</h2>
+      <p>Genera contratos de alquiler con cálculo de monto total, finaliza devoluciones y registra pagos (Efectivo, Tarjeta, Yape).</p>
+      <a mat-flat-button class="btn-card-action" routerLink="/empleado/alquileres">
+        <span>Gestionar alquileres</span>
+        <mat-icon>arrow_forward</mat-icon>
+      </a>
+    </article>
+  </section>
+</section>
