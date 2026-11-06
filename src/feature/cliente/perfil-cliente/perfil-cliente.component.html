@@ -1,0 +1,334 @@
+<div class="page-container">
+  <div class="top-nav-bar">
+    <button type="button" class="btn-volver-panel" (click)="volver()">
+      <mat-icon>arrow_back</mat-icon>
+      Volver
+    </button>
+  </div>
+
+  <section class="perfil-cliente-section">
+    <!-- Encabezado con avatar, nombre, correo y acción de edición -->
+    <div class="perfil-hero-card">
+      <div class="perfil-avatar-circle">
+        <mat-icon>person</mat-icon>
+      </div>
+
+      <div class="perfil-hero-info">
+        <div class="perfil-name-row">
+          <h2>{{ nombreCompletoVisual() }}</h2>
+        </div>
+        <p class="perfil-email-sub">
+          <mat-icon>mail</mat-icon>
+          {{ formPerfil.email || usuario()?.username }}
+        </p>
+      </div>
+
+      <div class="perfil-actions-top">
+        @if (!editandoPerfil()) {
+          <button mat-flat-button class="btn-editar-perfil" (click)="iniciarEdicion()">
+            <mat-icon>edit</mat-icon>
+            Editar mis datos
+          </button>
+        } @else {
+          <button mat-stroked-button class="btn-cancelar-perfil" (click)="cancelarEdicion()" [disabled]="guardandoPerfil()">
+            <mat-icon>close</mat-icon>
+            Cancelar
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (mensajeExitoPerfil()) {
+      <div class="alert-banner alert-success">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ mensajeExitoPerfil() }}</span>
+      </div>
+    }
+
+    @if (mensajeErrorPerfil()) {
+      <div class="alert-banner alert-error">
+        <mat-icon>error</mat-icon>
+        <span>{{ mensajeErrorPerfil() }}</span>
+      </div>
+    }
+
+    <!-- Vista de tarjetas de datos -->
+    @if (!editandoPerfil()) {
+      <div class="perfil-datos-grid">
+        <div class="dato-card">
+          <div class="dato-icon"><mat-icon>badge</mat-icon></div>
+          <div class="dato-content">
+            <span class="dato-label">Nombres completos</span>
+            <strong class="dato-valor">{{ formPerfil.nombres || 'No registrado' }}</strong>
+          </div>
+        </div>
+
+        <div class="dato-card">
+          <div class="dato-icon"><mat-icon>badge</mat-icon></div>
+          <div class="dato-content">
+            <span class="dato-label">Apellidos completos</span>
+            <strong class="dato-valor">{{ formPerfil.apellidos || 'No registrado' }}</strong>
+          </div>
+        </div>
+
+        <div class="dato-card">
+          <div class="dato-icon"><mat-icon>fingerprint</mat-icon></div>
+          <div class="dato-content">
+            <span class="dato-label">DNI</span>
+            <strong class="dato-valor">{{ formPerfil.numeroDocumento || 'No registrado' }}</strong>
+          </div>
+        </div>
+
+        <div class="dato-card">
+          <div class="dato-icon"><mat-icon>drive_eta</mat-icon></div>
+          <div class="dato-content">
+            <span class="dato-label">Licencia de Conducir</span>
+            <strong class="dato-valor">{{ formPerfil.licenciaConducir || 'No registrada' }}</strong>
+          </div>
+        </div>
+
+        <div class="dato-card">
+          <div class="dato-icon"><mat-icon>phone</mat-icon></div>
+          <div class="dato-content">
+            <span class="dato-label">Teléfono celular</span>
+            <strong class="dato-valor">{{ formPerfil.telefono || 'No registrado' }}</strong>
+          </div>
+        </div>
+
+        <div class="dato-card">
+          <div class="dato-icon"><mat-icon>home</mat-icon></div>
+          <div class="dato-content">
+            <span class="dato-label">Dirección de residencia</span>
+            <strong class="dato-valor">{{ formPerfil.direccion || 'No registrada' }}</strong>
+          </div>
+        </div>
+
+        <div class="dato-card">
+          <div class="dato-icon"><mat-icon>mail</mat-icon></div>
+          <div class="dato-content">
+            <span class="dato-label">Correo electrónico</span>
+            <strong class="dato-valor">{{ formPerfil.email || usuario()?.username }}</strong>
+          </div>
+        </div>
+
+        <div class="dato-card dato-card-password">
+          <div class="dato-icon"><mat-icon>lock</mat-icon></div>
+          <div class="dato-content">
+            <span class="dato-label">Contraseña de acceso</span>
+            <div class="pass-val-row">
+              <strong class="dato-valor">••••••••••••</strong>
+              <button type="button" class="btn-cambiar-pass-chip" (click)="abrirModalCambiarPassword()" matTooltip="Cambiar contraseña">
+                <mat-icon>vpn_key</mat-icon>
+                <span>Cambiar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <!-- Formulario de edición -->
+      <form class="perfil-form-card" (ngSubmit)="guardarPerfil()">
+        <div class="perfil-form-header">
+          <h3><mat-icon>edit_note</mat-icon> Actualizar Información Personal</h3>
+          <p>Los datos ingresados se mantendrán sincronizados con tus reservas y contratos de alquiler.</p>
+        </div>
+
+        <div class="perfil-form-grid">
+          <label class="form-field">
+            <span>Nombres completos</span>
+            <input type="text" [(ngModel)]="formPerfil.nombres" name="nombres" required placeholder="Ej: Juan Carlos">
+          </label>
+
+          <label class="form-field">
+            <span>Apellidos completos</span>
+            <input type="text" [(ngModel)]="formPerfil.apellidos" name="apellidos" required placeholder="Ej: Martínez Muñoz">
+          </label>
+
+          <label class="form-field">
+            <span>DNI</span>
+            <input
+              type="text"
+              [(ngModel)]="formPerfil.numeroDocumento"
+              name="numeroDocumento"
+              maxlength="8"
+              inputmode="numeric"
+              (input)="onDniInput($event)"
+              placeholder="Ej: 71743364"
+            >
+          </label>
+
+          <label class="form-field">
+            <span>Licencia de conducir</span>
+            <input
+              type="text"
+              [(ngModel)]="formPerfil.licenciaConducir"
+              name="licenciaConducir"
+              maxlength="9"
+              style="text-transform: uppercase;"
+              (input)="onLicenciaInput($event)"
+              placeholder="Ej: Q71743364"
+            >
+          </label>
+
+          <label class="form-field">
+            <span>Teléfono celular</span>
+            <input
+              type="tel"
+              [(ngModel)]="formPerfil.telefono"
+              name="telefono"
+              maxlength="9"
+              inputmode="numeric"
+              (input)="onTelefonoInput($event)"
+              placeholder="Ej: 978071938"
+            >
+          </label>
+
+          <label class="form-field">
+            <span>Dirección de residencia</span>
+            <input
+              type="text"
+              [(ngModel)]="formPerfil.direccion"
+              name="direccion"
+              placeholder="Ej: Av. Javier Prado Este 1234, San Isidro"
+            >
+          </label>
+
+          <label class="form-field" style="grid-column: span 2;">
+            <span>Correo electrónico</span>
+            <input
+              type="email"
+              [value]="formPerfil.email || usuario()?.username"
+              readonly
+              disabled
+              class="input-readonly"
+            >
+          </label>
+        </div>
+
+        <div class="perfil-form-actions">
+          <button
+            mat-stroked-button
+            type="button"
+            class="btn-cancelar-perfil"
+            (click)="cancelarEdicion()"
+            [disabled]="guardandoPerfil()"
+          >
+            <mat-icon>cancel</mat-icon>
+            Cancelar
+          </button>
+
+          <button
+            mat-flat-button
+            type="submit"
+            class="btn-guardar-perfil"
+            [disabled]="guardandoPerfil()"
+          >
+            <mat-icon>save</mat-icon>
+            {{ guardandoPerfil() ? 'Guardando cambios...' : 'Guardar y Actualizar Perfil' }}
+          </button>
+        </div>
+      </form>
+    }
+  </section>
+
+  <!-- Modal Cambiar Contraseña -->
+  @if (modalPasswordAbierto()) {
+    <div class="modal-backdrop" (click)="cerrarModalCambiarPassword()">
+      <div class="modal-card modal-card-pass" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-header-brand">
+            <div class="modal-header-icon pass-icon">
+              <mat-icon>lock_reset</mat-icon>
+            </div>
+            <div>
+              <h3>Actualizar Contraseña de Acceso</h3>
+              <p>Seguridad de tu cuenta de cliente en Paul Car's</p>
+            </div>
+          </div>
+          <button mat-icon-button (click)="cerrarModalCambiarPassword()" aria-label="Cerrar modal">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <form (ngSubmit)="ejecutarCambioPassword()">
+          <div class="modal-body">
+            <p class="pass-info-text">
+              Ingresa tu contraseña actual y define una nueva contraseña de al menos 4 caracteres.
+            </p>
+
+            @if (errorPassword()) {
+              <div class="alert-banner alert-error" style="margin-bottom: 12px;">
+                <mat-icon>error</mat-icon>
+                <span>{{ errorPassword() }}</span>
+              </div>
+            }
+
+            @if (exitoPassword()) {
+              <div class="alert-banner alert-success" style="margin-bottom: 12px;">
+                <mat-icon>check_circle</mat-icon>
+                <span>{{ exitoPassword() }}</span>
+              </div>
+            }
+
+            <div class="modal-form-vertical">
+              <label class="form-field">
+                <span>Contraseña actual</span>
+                <input
+                  type="password"
+                  [(ngModel)]="formPassword.actual"
+                  name="actual"
+                  required
+                  placeholder="Tu contraseña actual"
+                >
+              </label>
+
+              <label class="form-field">
+                <span>Nueva contraseña</span>
+                <input
+                  type="password"
+                  [(ngModel)]="formPassword.nuevo"
+                  name="nuevo"
+                  required
+                  minlength="4"
+                  placeholder="Mínimo 4 caracteres"
+                >
+              </label>
+
+              <label class="form-field">
+                <span>Confirmar nueva contraseña</span>
+                <input
+                  type="password"
+                  [(ngModel)]="formPassword.confirmar"
+                  name="confirmar"
+                  required
+                  placeholder="Repite la nueva contraseña"
+                >
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-pass-actions">
+            <button
+              mat-button
+              type="button"
+              class="btn-cancelar-modal-pass"
+              (click)="cerrarModalCambiarPassword()"
+              [disabled]="guardandoPassword()"
+            >
+              Cancelar
+            </button>
+            <button
+              mat-flat-button
+              type="submit"
+              class="btn-confirmar-pass"
+              [disabled]="guardandoPassword()"
+            >
+              <mat-icon>key</mat-icon>
+              {{ guardandoPassword() ? 'Actualizando...' : 'Actualizar contraseña' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

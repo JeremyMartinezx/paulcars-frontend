@@ -1,0 +1,283 @@
+<section class="portal-cliente-page">
+  <header class="portal-hero">
+    <div class="hero-content">
+      <div class="client-badge">
+        <mat-icon>account_circle</mat-icon>
+        <span>PORTAL DE CLIENTE &bull; PAUL CAR'S</span>
+      </div>
+      <h1>¡Bienvenido a tu Portal, {{ primerNombreVisual() }}!</h1>
+      <p class="hero-subtitle">
+        Gestiona tus alquileres, revisa la flota disponible en Lima, mantén actualizado tu perfil de conductor y solicita tu próximo vehículo con confirmación inmediata.
+      </p>
+
+      <div class="hero-actions">
+        <a mat-flat-button class="btn-gold" routerLink="/catalogo">
+          <mat-icon>directions_car</mat-icon>
+          Ver catálogo completo
+        </a>
+        <a mat-stroked-button class="btn-outline-white" routerLink="/cliente/reservas">
+          <mat-icon>assignment</mat-icon>
+          Mis Reservas
+        </a>
+        <a mat-stroked-button class="btn-outline-white" routerLink="/reservar">
+          <mat-icon>calendar_month</mat-icon>
+          Solicitar nueva reserva
+        </a>
+      </div>
+    </div>
+  </header>
+
+  @if (perfilIncompleto()) {
+    <div class="aviso-perfil-discreto">
+      <div class="aviso-perfil-contenido">
+        <mat-icon class="aviso-perfil-icon">info</mat-icon>
+        <div class="aviso-perfil-texto">
+          <strong>Perfil pendiente de completar:</strong>
+          <span>Registra tu DNI, Licencia de Conducir y Dirección en Mi Perfil para poder solicitar reservas sin demoras.</span>
+        </div>
+      </div>
+      <a mat-button class="btn-aviso-perfil" routerLink="/cliente/perfil">
+        <span>Actualizar en Mi Perfil</span>
+        <mat-icon>arrow_forward</mat-icon>
+      </a>
+    </div>
+  }
+
+    <section class="metrics-grid" aria-label="Resumen de tu cuenta">
+      <article class="metric-card">
+        <div class="icon-bubble bubble-navy">
+          <mat-icon>directions_car</mat-icon>
+        </div>
+        <div class="metric-info">
+          <span class="metric-label">Modelos en catálogo</span>
+          <strong class="metric-value">{{ totalModelosActivos() }}</strong>
+          <span class="metric-hint">Modelos disponibles para reserva</span>
+        </div>
+      </article>
+
+      <article class="metric-card">
+        <div class="icon-bubble bubble-emerald">
+          <mat-icon>event_available</mat-icon>
+        </div>
+        <div class="metric-info">
+          <span class="metric-label">Tus reservas activas</span>
+          <strong class="metric-value">{{ reservasActivas() }}</strong>
+          <span class="metric-hint">Contratos y reservas en curso</span>
+        </div>
+      </article>
+
+      <article class="metric-card">
+        <div class="icon-bubble bubble-amber">
+          <mat-icon>task_alt</mat-icon>
+        </div>
+        <div class="metric-info">
+          <span class="metric-label">Alquileres completados</span>
+          <strong class="metric-value text-accent">{{ alquileresCompletados() }}</strong>
+          <span class="metric-hint">Entregas y contratos finalizados con éxito</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="flota-destacada-section">
+      <div class="section-title-row">
+        <div>
+          <span class="section-tag">ENTREGA INMEDIATA</span>
+          <h2>Flota destacada para ti</h2>
+          <p class="section-desc">Selecciona un vehículo disponible y resérvalo en minutos.</p>
+        </div>
+        <a mat-stroked-button class="btn-ver-todos" routerLink="/catalogo">
+          <span>Ver todos los vehículos</span>
+          <mat-icon>arrow_forward</mat-icon>
+        </a>
+      </div>
+
+      <div class="vehiculos-grid">
+        @for (vehiculo of flotaDisponible(); track vehiculo.idVehiculo) {
+          <article class="car-card">
+            <div class="car-image-container" [routerLink]="['/catalogo/vehiculo', vehiculo.idVehiculo]" style="cursor: pointer;" title="Ver detalle del auto">
+              @let img = obtenerImagenVehiculo(vehiculo);
+              @if (img) {
+                <img [src]="img" [alt]="(vehiculo.modelo?.marca?.nombreMarca || '') + ' ' + (vehiculo.modelo?.modelo || '')" (error)="$any($event.target).src = '/images/vehiculos/corolla.jpg'" loading="lazy" decoding="async" />
+              } @else {
+                <div class="car-placeholder">
+                  <mat-icon>directions_car</mat-icon>
+                </div>
+              }
+              <span class="category-pill">{{ vehiculo.tipo?.nombreTipo || 'VEHÍCULO' }}</span>
+            </div>
+
+            <div class="car-body">
+              <div class="car-title-row">
+                <h3 [routerLink]="['/catalogo/vehiculo', vehiculo.idVehiculo]" style="cursor: pointer;" title="Ver detalle del auto">
+                  {{ vehiculo.modelo?.marca?.nombreMarca }} {{ vehiculo.modelo?.modelo }}
+                </h3>
+                <span class="car-year">{{ vehiculo.anio }}</span>
+              </div>
+
+              <div class="car-footer">
+                <div class="price-container">
+                  <span class="price-amount">S/ {{ vehiculo.precioDia }}</span>
+                  <span class="price-period">/día</span>
+                </div>
+
+                <a mat-flat-button class="btn-reservar-card" [routerLink]="['/reservar']" [queryParams]="{ vehiculoId: vehiculo.idVehiculo }">
+                  <mat-icon>calendar_month</mat-icon>
+                  Reservar
+                </a>
+              </div>
+            </div>
+          </article>
+        }
+
+        @if (flotaDisponible().length === 0) {
+          <div class="empty-fleet-card">
+            <mat-icon>car_repair</mat-icon>
+            <p>No hay vehículos disponibles en este momento. Por favor comunícate con nuestro counter.</p>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="alquileres-cliente-section">
+      <div class="section-title-row">
+        <div>
+          <span class="section-tag">GESTIÓN &bull; TUS SERVICIOS</span>
+          <h2>Actividad reciente</h2>
+          <p class="section-desc">Revisa tus reservas y alquileres más recientes.</p>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <a mat-stroked-button class="btn-ver-todos" routerLink="/cliente/reservas">
+            <span>Ver mis reservas</span>
+            <mat-icon>open_in_new</mat-icon>
+          </a>
+        </div>
+      </div>
+
+      @if (reservasRecientes().length === 0) {
+        <div class="empty-fleet-card">
+          <mat-icon>event_busy</mat-icon>
+          <p>No tienes reservas ni alquileres activos recientemente. ¡Explora el catálogo y solicita tu reserva hoy!</p>
+        </div>
+      } @else {
+        <div class="alquileres-table-card">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th scope="col" class="col-vehiculo">VEHÍCULO</th>
+                <th scope="col" class="col-periodo">PERIODO</th>
+                <th scope="col" class="col-estado" style="text-align: center;">ESTADO</th>
+                <th scope="col" class="col-comprobante" style="text-align: center;">COMPROBANTE</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of reservasRecientes(); track a.idAlquiler) {
+                @let liq = obtenerLiquidacion(a);
+                @let est = (a.estado?.nombreEstado || '').toUpperCase();
+                <tr>
+                  <td class="col-vehiculo">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <img
+                        [src]="imagenVehiculo(a)"
+                        [alt]="nombreVehiculo(a)"
+                        style="width: 58px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; background: #f8fafc;"
+                      />
+                      <div>
+                        <strong style="color: #0f172a; font-size: 0.9rem; display: block;">{{ nombreVehiculo(a) }}</strong>
+                        <span style="font-size: 0.76rem; color: #64748b;">{{ liq.tipoVehiculo }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="col-periodo">
+                    <div class="periodo-asesor-cell">
+                      <div class="periodo-linea">
+                        <mat-icon class="ic-periodo">calendar_today</mat-icon>
+                        <strong class="fecha-txt">{{ a.fechaInicio }}</strong>
+                        <span class="hora-badge">{{ a.horaRecojo || '10:00' }} hrs</span>
+                      </div>
+                      <div class="periodo-linea sub">
+                        <mat-icon class="ic-periodo">event_repeat</mat-icon>
+                        <span class="fecha-txt">{{ a.fechaFinEstimada }}</span>
+                        <span class="hora-badge sub">{{ a.horaDevolucion || '18:00' }} hrs</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="col-estado" style="text-align: center;">
+                    <div class="estado-cell-wrapper">
+                      @if (est === 'PENDIENTE') {
+                        <span class="badge-estado badge-pendiente">Pendiente</span>
+                      } @else if (est === 'RESERVADO' || est === 'APROBADO' || est === 'PAGADO' || est === 'CONFIRMADO') {
+                        @if (esReservaPagada(a)) {
+                          <span class="badge-estado badge-reservado-pagado">Reservado &bull; Pagado</span>
+                        } @else {
+                          <span class="badge-estado badge-reservado-por-pagar">Reservado &bull; Por pagar</span>
+                        }
+                      } @else if (est === 'PAGO_EN_REVISION') {
+                        <span class="badge-estado badge-revision">Pago en revisión</span>
+                      } @else if (est === 'ACTIVO' || est === 'EN_CURSO' || est === 'EN CURSO') {
+                        <span class="badge-estado badge-en-ruta">En ruta</span>
+                      } @else if (est === 'FINALIZADO') {
+                        <span class="badge-estado badge-finalizado">Finalizado</span>
+                      } @else if (est === 'CANCELADO') {
+                        <span class="badge-estado badge-cancelado">Cancelado</span>
+                      } @else {
+                        <span class="badge-estado badge-finalizado">{{ est }}</span>
+                      }
+                    </div>
+                  </td>
+                  <td class="col-comprobante" style="text-align: center;">
+                    @let pagado = esReservaPagada(a) || est === 'PAGADO' || est === 'CONFIRMADO' || est === 'ACTIVO' || est === 'EN_CURSO' || est === 'EN CURSO' || est === 'FINALIZADO';
+                    @if (est === 'CANCELADO' || est === 'RECHAZADO' || est === 'CANCELADO_SIN_STOCK' || est === 'RECHAZADO_DOCUMENTACION') {
+                      <span class="tabla-vacio-dash">&mdash;</span>
+                    } @else {
+                      <button
+                        type="button"
+                        class="btn-tabla-comprobante"
+                        (click)="abrirDetalleLiquidacion(a)"
+                      >
+                        <mat-icon class="btn-ic">
+                          {{ est === 'PENDIENTE' ? 'description' : (!pagado ? 'event_note' : 'receipt_long') }}
+                        </mat-icon>
+                        <span>
+                          {{ est === 'PENDIENTE' ? 'Solicitud' : (!pagado ? 'Reserva' : 'Ver') }}
+                        </span>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="shortcuts-grid">
+      <article class="shortcut-card">
+        <div class="shortcut-icon-box">
+          <mat-icon>manage_search</mat-icon>
+        </div>
+        <div class="shortcut-body">
+          <h3>Explorar todo el catálogo</h3>
+          <p>Filtra por SUV, Sedán, Pickup o Hatchback y compara tarifas y características para tu próximo viaje.</p>
+          <a mat-button class="shortcut-link" routerLink="/catalogo">
+            <span>Abrir catálogo</span>
+            <mat-icon>chevron_right</mat-icon>
+          </a>
+        </div>
+      </article>
+
+      <article class="shortcut-card">
+        <div class="shortcut-icon-box shortcut-whatsapp">
+          <mat-icon>support_agent</mat-icon>
+        </div>
+        <div class="shortcut-body">
+          <h3>Soporte y Asistencia de Counter</h3>
+          <p>¿Necesitas coordinar un recojo especial o extender tu alquiler? Nuestro equipo en Lima te atiende las 24 horas.</p>
+          <a class="shortcut-link whatsapp-color" href="https://wa.me/51959137712" target="_blank" rel="noopener">
+            <span>Contactar por WhatsApp</span>
+            <mat-icon>chat</mat-icon>
+          </a>
+        </div>
+      </article>
+    </section>
+</section>
