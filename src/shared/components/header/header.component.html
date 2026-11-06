@@ -1,0 +1,359 @@
+<mat-toolbar class="main-header">
+  <a class="brand" [routerLink]="rutaInicio()" (click)="irAInicio()" role="button" tabindex="0">
+    <img src="images/logo-white.png" alt="Paul Car's alquiler de vehículos" class="brand-logo">
+  </a>
+
+  <span class="spacer"></span>
+
+  <nav class="desktop-nav" aria-label="Navegación principal">
+    @if (!estaAutenticado()) {
+      <a mat-button routerLink="/" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}">Inicio</a>
+      <a mat-button routerLink="/catalogo" routerLinkActive="nav-active">Catálogo de Vehículos</a>
+      <a mat-button routerLink="/nosotros" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}">Nosotros</a>
+      <a mat-button routerLink="/contacto" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}">Contactanos</a>
+      <a mat-button routerLink="/login" routerLinkActive="nav-active" class="nav-link-login">Iniciar sesión</a>
+      <a mat-flat-button class="btn-reservar-header" routerLink="/reservar" routerLinkActive="nav-active" [class.nav-active]="esReservarActivo()">
+        <mat-icon class="btn-reservar-icono">calendar_month</mat-icon>
+        <span class="btn-reservar-texto">Reservar</span>
+      </a>
+    } @else if (esCliente()) {
+      <a mat-button routerLink="/" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}">Inicio</a>
+      <a mat-button routerLink="/cliente" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}">Mi Portal</a>
+      <a mat-button routerLink="/cliente/reservas" routerLinkActive="nav-active">Mis Reservas</a>
+      <a mat-button routerLink="/catalogo" routerLinkActive="nav-active">Catálogo de Vehículos</a>
+      <a mat-flat-button class="btn-reservar-header" routerLink="/reservar" routerLinkActive="nav-active" [class.nav-active]="esReservarActivo()">
+        <mat-icon class="btn-reservar-icono">calendar_month</mat-icon>
+        <span class="btn-reservar-texto">Reservar</span>
+      </a>
+    } @else if (esAdmin()) {
+      <a mat-button routerLink="/admin" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}">Panel</a>
+      <a mat-button routerLink="/vehiculos" routerLinkActive="nav-active">Vehículos</a>
+      <a mat-button routerLink="/clientes" routerLinkActive="nav-active">Clientes</a>
+      <a mat-button routerLink="/alquileres" routerLinkActive="nav-active">Alquileres</a>
+      <a mat-button routerLink="/admin/usuarios" routerLinkActive="nav-active">Usuarios</a>
+      <a mat-button routerLink="/admin/catalogo" routerLinkActive="nav-active">Catálogos</a>
+      <a mat-button routerLink="/admin/reportes" routerLinkActive="nav-active">Reportes</a>
+    } @else {
+      <a mat-button routerLink="/empleado" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}">Panel</a>
+      <a mat-button routerLink="/vehiculos" routerLinkActive="nav-active">Vehículos</a>
+      <a mat-button routerLink="/clientes" routerLinkActive="nav-active">Clientes</a>
+      <a mat-button routerLink="/empleado/alquileres" routerLinkActive="nav-active">Alquileres</a>
+    }
+  </nav>
+
+  @if (estaAutenticado()) {
+    <button
+      mat-icon-button
+      class="notification-button"
+      aria-label="Notificaciones"
+      [matMenuTriggerFor]="notifMenu"
+      matTooltip="Notificaciones de reservas y alquileres"
+    >
+      <mat-icon
+        [matBadge]="notificacionesSinLeer()"
+        matBadgeColor="warn"
+        matBadgeSize="small"
+        [matBadgeHidden]="notificacionesSinLeer() === 0"
+      >
+        notifications_none
+      </mat-icon>
+    </button>
+
+    <div class="divider"></div>
+
+    <button
+      mat-button
+      class="profile-button"
+      [matMenuTriggerFor]="profileMenu"
+    >
+      <div class="profile-button-content">
+        <span class="profile-greeting">
+          @if (esCliente()) {
+            <strong>{{ nombreUsuarioVisual() }}</strong>
+          } @else {
+            <span class="perfil-staff">
+              <strong>{{ nombreUsuarioVisual() }}</strong>
+              <small>{{ correoUsuarioVisual() }}</small>
+            </span>
+          }
+        </span>
+
+        <span class="avatar">
+          <mat-icon>person</mat-icon>
+        </span>
+
+        <mat-icon class="arrow-icon">keyboard_arrow_down</mat-icon>
+      </div>
+    </button>
+
+    <mat-menu #profileMenu="matMenu" xPosition="before">
+      <div class="perfil-menu-cabecera" (click)="$event.stopPropagation()">
+        <strong>{{ nombreUsuarioVisual() }}</strong>
+        <span>{{ correoUsuarioVisual() }}</span>
+        <small>{{ etiquetaRol() }}</small>
+      </div>
+      @if (esCliente()) {
+        <a mat-menu-item routerLink="/cliente">
+          <mat-icon>account_circle</mat-icon>
+          <span>Mi Portal</span>
+        </a>
+        <a mat-menu-item routerLink="/cliente/perfil">
+          <mat-icon>badge</mat-icon>
+          <span>Mi Perfil</span>
+        </a>
+        <a mat-menu-item routerLink="/cliente/reservas">
+          <mat-icon>assignment</mat-icon>
+          <span>Mis Reservas</span>
+        </a>
+        <a mat-menu-item routerLink="/catalogo">
+          <mat-icon>directions_car</mat-icon>
+          <span>Catálogo de Vehículos</span>
+        </a>
+        <a mat-menu-item routerLink="/reservar">
+          <mat-icon>calendar_month</mat-icon>
+          <span>Solicitar Reserva</span>
+        </a>
+      }
+      @if (esAdmin()) {
+        <a mat-menu-item routerLink="/admin">
+          <mat-icon>dashboard</mat-icon>
+          <span>Panel</span>
+        </a>
+        <a mat-menu-item routerLink="/admin/perfil">
+          <mat-icon>badge</mat-icon>
+          <span>Mi Perfil</span>
+        </a>
+        <a mat-menu-item routerLink="/vehiculos">
+          <mat-icon>directions_car</mat-icon>
+          <span>Vehículos</span>
+        </a>
+        <a mat-menu-item routerLink="/clientes">
+          <mat-icon>groups</mat-icon>
+          <span>Clientes</span>
+        </a>
+        <a mat-menu-item routerLink="/alquileres">
+          <mat-icon>assignment</mat-icon>
+          <span>Alquileres</span>
+        </a>
+        <a mat-menu-item routerLink="/admin/usuarios">
+          <mat-icon>manage_accounts</mat-icon>
+          <span>Usuarios</span>
+        </a>
+        <a mat-menu-item routerLink="/admin/catalogo">
+          <mat-icon>category</mat-icon>
+          <span>Catálogos</span>
+        </a>
+        <a mat-menu-item routerLink="/admin/reportes">
+          <mat-icon>insights</mat-icon>
+          <span>Reportes</span>
+        </a>
+      }
+      @if (esEmpleado()) {
+        <a mat-menu-item routerLink="/empleado">
+          <mat-icon>dashboard</mat-icon>
+          <span>Panel</span>
+        </a>
+        <a mat-menu-item routerLink="/empleado/perfil">
+          <mat-icon>badge</mat-icon>
+          <span>Mi Perfil</span>
+        </a>
+        <a mat-menu-item routerLink="/vehiculos">
+          <mat-icon>directions_car</mat-icon>
+          <span>Vehículos</span>
+        </a>
+        <a mat-menu-item routerLink="/clientes">
+          <mat-icon>groups</mat-icon>
+          <span>Clientes</span>
+        </a>
+        <a mat-menu-item routerLink="/empleado/alquileres">
+          <mat-icon>assignment</mat-icon>
+          <span>Alquileres</span>
+        </a>
+      }
+      <button mat-menu-item type="button" (click)="cerrarSesion()">
+        <mat-icon>logout</mat-icon>
+        <span>Cerrar sesión</span>
+      </button>
+    </mat-menu>
+  }
+
+  <button
+    mat-icon-button
+    class="mobile-menu-button"
+    [matMenuTriggerFor]="mobileMenu"
+    aria-label="Abrir menú móvil"
+  >
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <mat-menu #mobileMenu="matMenu">
+    @if (!estaAutenticado()) {
+      <a mat-menu-item routerLink="/" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}">
+        <mat-icon>home</mat-icon>
+        <span>Inicio</span>
+      </a>
+      <a mat-menu-item routerLink="/catalogo">
+        <mat-icon>directions_car</mat-icon>
+        <span>Catálogo</span>
+      </a>
+      <a mat-menu-item routerLink="/nosotros" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}">
+        <mat-icon>info</mat-icon>
+        <span>Nosotros</span>
+      </a>
+      <a mat-menu-item routerLink="/contacto" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}">
+        <mat-icon>contact_support</mat-icon>
+        <span>Contactanos</span>
+      </a>
+      <a mat-menu-item routerLink="/reservar" routerLinkActive="nav-active" [class.nav-active]="esReservarActivo()">
+        <mat-icon>calendar_month</mat-icon>
+        <span>Reservar</span>
+      </a>
+      <a mat-menu-item routerLink="/login">
+        <mat-icon>login</mat-icon>
+        <span>Iniciar sesión</span>
+      </a>
+    } @else if (esCliente()) {
+      <a mat-menu-item routerLink="/" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}">
+        <mat-icon>home</mat-icon>
+        <span>Inicio</span>
+      </a>
+      <a mat-menu-item routerLink="/cliente">
+        <mat-icon>account_circle</mat-icon>
+        <span>Mi Portal</span>
+      </a>
+      <a mat-menu-item routerLink="/cliente/perfil">
+        <mat-icon>badge</mat-icon>
+        <span>Mi Perfil</span>
+      </a>
+      <a mat-menu-item routerLink="/cliente/reservas">
+        <mat-icon>assignment</mat-icon>
+        <span>Mis Reservas</span>
+      </a>
+      <a mat-menu-item routerLink="/catalogo">
+        <mat-icon>directions_car</mat-icon>
+        <span>Catálogo de Vehículos</span>
+      </a>
+      <a mat-menu-item routerLink="/reservar" routerLinkActive="nav-active" [class.nav-active]="esReservarActivo()">
+        <mat-icon>calendar_month</mat-icon>
+        <span>Reservar</span>
+      </a>
+      <button mat-menu-item type="button" (click)="cerrarSesion()">
+        <mat-icon>logout</mat-icon>
+        <span>Cerrar sesión</span>
+      </button>
+    } @else if (esAdmin()) {
+      <a mat-menu-item routerLink="/admin">
+        <mat-icon>dashboard</mat-icon>
+        <span>Panel Admin</span>
+      </a>
+      <a mat-menu-item routerLink="/admin/perfil">
+        <mat-icon>badge</mat-icon>
+        <span>Mi Perfil</span>
+      </a>
+      <a mat-menu-item routerLink="/vehiculos">
+        <mat-icon>directions_car</mat-icon>
+        <span>Vehículos</span>
+      </a>
+      <a mat-menu-item routerLink="/clientes">
+        <mat-icon>groups</mat-icon>
+        <span>Clientes</span>
+      </a>
+      <a mat-menu-item routerLink="/alquileres">
+        <mat-icon>assignment</mat-icon>
+        <span>Alquileres</span>
+      </a>
+      <a mat-menu-item routerLink="/admin/usuarios">
+        <mat-icon>manage_accounts</mat-icon>
+        <span>Usuarios</span>
+      </a>
+      <a mat-menu-item routerLink="/admin/catalogo">
+        <mat-icon>category</mat-icon>
+        <span>Catálogos</span>
+      </a>
+      <a mat-menu-item routerLink="/admin/reportes">
+        <mat-icon>insights</mat-icon>
+        <span>Reportes</span>
+      </a>
+      <button mat-menu-item type="button" (click)="cerrarSesion()">
+        <mat-icon>logout</mat-icon>
+        <span>Cerrar sesión</span>
+      </button>
+    } @else {
+      <a mat-menu-item routerLink="/empleado">
+        <mat-icon>dashboard</mat-icon>
+        <span>Panel Empleado</span>
+      </a>
+      <a mat-menu-item routerLink="/empleado/perfil">
+        <mat-icon>badge</mat-icon>
+        <span>Mi Perfil</span>
+      </a>
+      <a mat-menu-item routerLink="/vehiculos">
+        <mat-icon>directions_car</mat-icon>
+        <span>Vehículos</span>
+      </a>
+      <a mat-menu-item routerLink="/clientes">
+        <mat-icon>groups</mat-icon>
+        <span>Clientes</span>
+      </a>
+      <a mat-menu-item routerLink="/empleado/alquileres">
+        <mat-icon>assignment</mat-icon>
+        <span>Alquileres</span>
+      </a>
+      <button mat-menu-item type="button" (click)="cerrarSesion()">
+        <mat-icon>logout</mat-icon>
+        <span>Cerrar sesión</span>
+      </button>
+    }
+  </mat-menu>
+
+  <mat-menu #notifMenu="matMenu" class="notif-menu-panel" xPosition="before">
+    <div class="notif-header" (click)="$event.stopPropagation()">
+      <div class="notif-header-title">
+        <mat-icon class="notif-header-icon">notifications_active</mat-icon>
+        <strong>Notificaciones</strong>
+        @if (notificacionesSinLeer() > 0) {
+          <span class="notif-counter-pill">{{ notificacionesSinLeer() }} nuevas</span>
+        }
+      </div>
+      @if (notificacionesSinLeer() > 0) {
+        <button mat-button class="btn-marcar-leidas" (click)="marcarTodasComoLeidas(); $event.stopPropagation()">
+          Marcar leídas
+        </button>
+      }
+    </div>
+
+    <div class="notif-list-container">
+      @for (n of notificaciones(); track n.id) {
+        <div
+          class="notif-card-item"
+          [class.no-leida]="!n.leida"
+          (click)="marcarComoLeida(n)"
+        >
+          <div class="notif-icon-col" [class]="'tipo-' + n.tipo">
+            <mat-icon>{{ n.icono }}</mat-icon>
+          </div>
+          <div class="notif-body-col">
+            <div class="notif-title-row">
+              <span class="notif-item-title">{{ n.titulo }}</span>
+              @if (n.badgeTexto) {
+                <span class="notif-tag-badge">{{ n.badgeTexto }}</span>
+              }
+            </div>
+            <p class="notif-item-msg">{{ n.mensaje }}</p>
+            <div class="notif-footer-row">
+              <span class="notif-time">{{ n.fecha }}</span>
+              @if (!n.leida) {
+                <span class="notif-unread-dot" title="Sin leer"></span>
+              }
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="notif-empty-state">
+          <mat-icon>notifications_none</mat-icon>
+          <p>No tienes notificaciones por el momento.</p>
+        </div>
+      }
+    </div>
+  </mat-menu>
+</mat-toolbar>
