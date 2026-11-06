@@ -1,0 +1,447 @@
+﻿<div class="pago-anticipado-container">
+
+  <!-- ========================================================================= -->
+  <!-- PANTALLA DE PAGO EXITOSO                                                  -->
+  <!-- ========================================================================= -->
+  @if (pagoExitoso()) {
+    <div class="pago-exitoso-screen">
+      <div class="exito-icon-wrapper">
+        <mat-icon class="exito-check-icon">check_circle</mat-icon>
+      </div>
+
+      <h2 class="exito-titulo">¡Pago Aprobado con Éxito!</h2>
+      <p class="exito-subtitulo">
+        Tu transacción fue acreditada en tiempo real.
+      </p>
+
+      <!-- Recibo Digital -->
+      <div class="recibo-card">
+        <div class="recibo-header">
+          <span class="recibo-empresa">PAUL CAR'S ALQUILER DE VEHÍCULOS</span>
+          <span class="recibo-estado-tag">CONFIRMADO</span>
+        </div>
+
+        <div class="recibo-monto-row">
+          <span class="recibo-monto-label">MONTO PAGADO</span>
+          <strong class="recibo-monto-val">S/ {{ pagoExitoso()?.monto | number:'1.2-2' }}</strong>
+        </div>
+
+        <div class="recibo-detalles">
+          <div class="recibo-item">
+            <span class="item-label">N° de Operación:</span>
+            <strong class="item-val font-mono">{{ pagoExitoso()?.transactionId }}</strong>
+          </div>
+          <div class="recibo-item">
+            <span class="item-label">Método de Pago:</span>
+            <strong class="item-val">
+              {{ pagoExitoso()?.metodo === 'TARJETA' ? 'Tarjeta de Crédito / Débito' : (pagoExitoso()?.metodo === 'YAPE' ? 'Yape' : 'Plin') }}
+            </strong>
+          </div>
+          <div class="recibo-item">
+            <span class="item-label">Concepto:</span>
+            <strong class="item-val">{{ esDeuda ? 'Liquidación de Alquiler' : 'Reserva de Alquiler' }}</strong>
+          </div>
+          <div class="recibo-item">
+            <span class="item-label">Vehículo:</span>
+            <strong class="item-val">{{ nombreVehiculo() }}</strong>
+          </div>
+          <div class="recibo-item">
+            <span class="item-label">Estado:</span>
+            <span class="badge-pagado-recibo">PAGADO &bull; RETIRO EN SEDE</span>
+          </div>
+        </div>
+
+        <div class="recibo-aviso">
+          <mat-icon>info</mat-icon>
+          <span>Presenta tu DNI y brevete físico en counter al momento del retiro de tus llaves.</span>
+        </div>
+      </div>
+
+      <button mat-flat-button color="primary" class="btn-exito-aceptar" (click)="finalizarYVolver()">
+        <span>Volver a Mis Reservas</span>
+      </button>
+    </div>
+  } @else {
+
+    <!-- ========================================================================= -->
+    <!-- HEADER AZUL DISCRETO Y CORPORATIVO                                        -->
+    <!-- ========================================================================= -->
+    <div class="dialog-header">
+      <div class="header-left">
+        <div class="header-icon-box">
+          <mat-icon class="header-secure-icon">lock</mat-icon>
+        </div>
+        <div class="header-text-block">
+          <h2 mat-dialog-title class="dialog-title">
+            {{ esDeuda ? 'Liquidación de Saldo' : 'Pasarela de Pago' }}
+          </h2>
+          <span class="dialog-subtitle">
+          {{ nombreVehiculo() }} &bull; Paul Car's Alquiler de Vehículos
+        </span>
+        </div>
+      </div>
+      <button mat-icon-button type="button" class="btn-close-header" (click)="cancelar()" [disabled]="procesando() || cargandoMetodo()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <mat-dialog-content class="dialog-body">
+
+      <!-- Resumen Discreto de Pago -->
+      <div class="resumen-discreto">
+        <div class="resumen-item">
+          <span class="resumen-lbl">{{ esDeuda ? 'Liquidación' : 'Alquiler de' }}</span>
+          <span class="resumen-vehiculo">
+            {{ nombreVehiculo() }}
+          </span>
+        </div>
+        <div class="resumen-monto-box">
+          <span class="resumen-monto-lbl">Total a pagar</span>
+          <span class="resumen-monto-val">S/ {{ totalMonto | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Banner de Error si ocurre -->
+      @if (error()) {
+        <div class="error-banner">
+          <mat-icon>error_outline</mat-icon>
+          <span class="error-text">{{ error() }}</span>
+          <button type="button" class="btn-error-close" (click)="error.set(null)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      }
+
+      <!-- ===================================================================== -->
+      <!-- PANTALLA DE CARGA AL SELECCIONAR MÉTODO                               -->
+      <!-- ===================================================================== -->
+      @if (cargandoMetodo()) {
+        <div class="cargando-metodo-box">
+          <mat-spinner diameter="38" class="spinner-inline"></mat-spinner>
+          <span class="cargando-txt">{{ mensajeCargandoMetodo() }}</span>
+        </div>
+      } @else if (paso() === 'SELECCION') {
+
+        <!-- ===================================================================== -->
+        <!-- PASO 1: SELECCIÓN DEL MÉTODO DE PAGO                                  -->
+        <!-- ===================================================================== -->
+        <div class="seleccion-metodos-step">
+          <div class="step-label-group">
+            <span class="step-label-title">Selecciona tu método de pago</span>
+            <span class="step-label-desc">Elige una opción para proceder con el pago seguro:</span>
+          </div>
+
+          <div class="metodos-lista">
+            <!-- 1. Tarjeta -->
+            <button type="button" class="metodo-row-btn" (click)="seleccionarMetodo('TARJETA')">
+              <div class="metodo-icon-box tarjeta-icon-bg">
+                <mat-icon>credit_card</mat-icon>
+              </div>
+              <div class="metodo-row-info">
+                <div class="metodo-row-top">
+                  <span class="metodo-nombre">Tarjeta de Débito o Crédito</span>
+                  <div class="tarjetas-marcas-mini">
+                    <img src="images/visa.png" alt="Visa" class="marca-mini" />
+                    <img src="images/mastercard.png" alt="Mastercard" class="marca-mini" />
+                    <img src="images/amex.png" alt="Amex" class="marca-mini" />
+                  </div>
+                </div>
+                <span class="metodo-detalle">Paga al instante de forma segura con Visa, Mastercard o Amex</span>
+              </div>
+              <mat-icon class="chevron-arrow">chevron_right</mat-icon>
+            </button>
+
+            <!-- 2. Yape (Sin letras de color) -->
+            <button type="button" class="metodo-row-btn" (click)="seleccionarMetodo('YAPE')">
+              <div class="metodo-icon-box yape-icon-bg">
+                <img src="images/yape.png" alt="Yape" class="logo-yape-img" />
+              </div>
+              <div class="metodo-row-info">
+                <div class="metodo-row-top">
+                  <span class="metodo-nombre">Yape</span>
+                </div>
+                <span class="metodo-detalle">Ingresa tu número celular y código de aprobación</span>
+              </div>
+              <mat-icon class="chevron-arrow">chevron_right</mat-icon>
+            </button>
+
+            <!-- 3. Plin (Sin letras de color) -->
+            <button type="button" class="metodo-row-btn" (click)="seleccionarMetodo('PLIN')">
+              <div class="metodo-icon-box plin-icon-bg">
+                <img src="images/plin.png" alt="Plin" class="logo-plin-img" />
+              </div>
+              <div class="metodo-row-info">
+                <div class="metodo-row-top">
+                  <span class="metodo-nombre">Plin &bull; Código QR</span>
+                </div>
+                <span class="metodo-detalle">Escanea desde BBVA, Interbank, Scotiabank o BanBif</span>
+              </div>
+              <mat-icon class="chevron-arrow">chevron_right</mat-icon>
+            </button>
+          </div>
+        </div>
+
+      } @else if (paso() === 'FORMULARIO') {
+
+        <!-- ===================================================================== -->
+        <!-- PASO 2: FORMULARIO DEL MÉTODO SELECCIONADO (SIN BOTÓN CAMBIAR)        -->
+        <!-- ===================================================================== -->
+        <div class="formulario-metodo-step">
+
+          <div class="metodo-header-activo">
+            @if (metodoActivo() === 'TARJETA') {
+              <mat-icon class="metodo-ic-badge">credit_card</mat-icon>
+              <span>Pago con Tarjeta de Crédito / Débito</span>
+            } @else if (metodoActivo() === 'YAPE') {
+              <img src="images/yape.png" alt="Yape" class="metodo-logo-badge" />
+              <span>Pago con Yape</span>
+            } @else if (metodoActivo() === 'PLIN') {
+              <img src="images/plin.png" alt="Plin" class="metodo-logo-badge" />
+              <span>Pago con Plin QR</span>
+            }
+          </div>
+
+          <!-- FORMULARIO 1: TARJETA -->
+          @if (metodoActivo() === 'TARJETA') {
+            <div [formGroup]="tarjetaForm" class="formulario-pasarela">
+              <div class="campo-bloque">
+                <mat-form-field appearance="outline" class="campo-full">
+                  <mat-label>Número de Tar<span class="sr-break" aria-hidden="true"></span>jeta</mat-label>
+                  <input
+                    matInput
+                    [formControl]="tarjetaForm.controls.numeroTarjeta"
+                    type="text"
+                    name="sec_op_code"
+                    id="sec_op_code"
+                    placeholder="•••• •••• •••• ••••"
+                    maxlength="19"
+                    (input)="formatearNumeroTarjeta($event)"
+                    autocomplete="one-time-code"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    data-1p-ignore="true"
+                    data-bwignore="true"
+                  />
+                  <mat-icon matSuffix class="suffix-icon icono-tarjeta-suffix" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect width="20" height="14" x="2" y="5" rx="2"/>
+                      <line x1="2" y1="10" x2="22" y2="10"/>
+                    </svg>
+                  </mat-icon>
+                  @if (tarjetaForm.controls.numeroTarjeta.touched && tarjetaForm.controls.numeroTarjeta.invalid) {
+                    <mat-error>Ingresa los 16 dígitos de la tarjeta.</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+
+              <div class="campo-bloque">
+                <mat-form-field appearance="outline" class="campo-full">
+                  <mat-label>Titular de la Tar<span class="sr-break" aria-hidden="true"></span>jeta</mat-label>
+                  <input
+                    matInput
+                    [formControl]="tarjetaForm.controls.titular"
+                    type="text"
+                    name="sec_op_name"
+                    id="sec_op_name"
+                    placeholder="Como figura en la tarjeta"
+                    autocomplete="one-time-code"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    data-1p-ignore="true"
+                    data-bwignore="true"
+                  />
+                  <mat-icon matSuffix class="suffix-icon">person</mat-icon>
+                  @if (tarjetaForm.controls.titular.touched && tarjetaForm.controls.titular.invalid) {
+                    <mat-error>Ingresa el nombre del titular.</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+
+              <div class="form-grid-2">
+                <mat-form-field appearance="outline" class="campo-pasarela">
+                  <mat-label>Venci<span class="sr-break" aria-hidden="true"></span>miento (MM/AA)</mat-label>
+                  <input
+                    matInput
+                    [formControl]="tarjetaForm.controls.vencimiento"
+                    type="text"
+                    name="sec_op_date"
+                    id="sec_op_date"
+                    placeholder="MM/AA"
+                    maxlength="5"
+                    (input)="formatearVencimiento($event)"
+                    autocomplete="one-time-code"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    data-1p-ignore="true"
+                    data-bwignore="true"
+                  />
+                  <mat-icon matSuffix class="suffix-icon">calendar_today</mat-icon>
+                  @if (tarjetaForm.controls.vencimiento.touched && tarjetaForm.controls.vencimiento.invalid) {
+                    <mat-error>Formato: MM/AA</mat-error>
+                  }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="campo-pasarela">
+                  <mat-label>Código C<span class="sr-break" aria-hidden="true"></span>VV</mat-label>
+                  <input
+                    matInput
+                    [formControl]="tarjetaForm.controls.cvv"
+                    type="text"
+                    name="sec_op_auth"
+                    id="sec_op_auth"
+                    class="campo-cvv-masked"
+                    placeholder="3 o 4 dígitos"
+                    maxlength="4"
+                    (input)="formatearCvv($event)"
+                    autocomplete="one-time-code"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    data-1p-ignore="true"
+                    data-bwignore="true"
+                  />
+                  <mat-icon matSuffix class="suffix-icon">lock</mat-icon>
+                  @if (tarjetaForm.controls.cvv.touched && tarjetaForm.controls.cvv.invalid) {
+                    <mat-error>3 o 4 dígitos.</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+
+              <button
+                type="button"
+                class="btn-pagar-principal"
+                (click)="pagarConTarjeta()"
+                [disabled]="tarjetaForm.invalid || procesando()"
+              >
+                @if (procesando()) {
+                  <mat-spinner diameter="20" class="spinner-inline"></mat-spinner>
+                  <span>{{ mensajeProcesando() }}</span>
+                } @else {
+                  <mat-icon>lock</mat-icon>
+                  <span>Pagar S/ {{ totalMonto | number:'1.2-2' }}</span>
+                }
+              </button>
+            </div>
+          }
+
+          <!-- FORMULARIO 2: YAPE -->
+          @if (metodoActivo() === 'YAPE') {
+            <div [formGroup]="yapeForm" class="formulario-pasarela">
+              <div class="instruccion-caja">
+                <img src="images/yape.png" alt="Yape" class="instruccion-logo" />
+                <span class="instruccion-txt">
+                  Abre tu app Yape, pulsa el menú lateral, selecciona <strong>"Código de Aprobación"</strong> e ingrésalo aquí.
+                </span>
+              </div>
+
+              <div class="form-grid-2">
+                <mat-form-field appearance="outline" class="campo-pasarela">
+                  <mat-label>Celular Yape</mat-label>
+                  <input
+                    matInput
+                    formControlName="celular"
+                    type="tel"
+                    maxlength="9"
+                    placeholder="9XXXXXXXX"
+                    autocomplete="off"
+                  />
+                  <mat-icon matSuffix class="suffix-icon">phone_android</mat-icon>
+                  @if (yapeForm.controls.celular.touched && yapeForm.controls.celular.invalid) {
+                    <mat-error>9 dígitos que inicie con 9.</mat-error>
+                  }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="campo-pasarela">
+                  <mat-label>Código de Aprobación</mat-label>
+                  <input
+                    matInput
+                    formControlName="otp"
+                    type="text"
+                    maxlength="6"
+                    placeholder="6 dígitos"
+                    autocomplete="off"
+                  />
+                  <mat-icon matSuffix class="suffix-icon">password</mat-icon>
+                  @if (yapeForm.controls.otp.touched && yapeForm.controls.otp.invalid) {
+                    <mat-error>Código de 6 dígitos.</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+
+              <button
+                type="button"
+                class="btn-pagar-principal"
+                (click)="pagarConYape()"
+                [disabled]="yapeForm.invalid || procesando()"
+              >
+                @if (procesando()) {
+                  <mat-spinner diameter="20" class="spinner-inline"></mat-spinner>
+                  <span>{{ mensajeProcesando() }}</span>
+                } @else {
+                  <mat-icon>lock</mat-icon>
+                  <span>Pagar S/ {{ totalMonto | number:'1.2-2' }} con Yape</span>
+                }
+              </button>
+            </div>
+          }
+
+          <!-- FORMULARIO 3: PLIN -->
+          @if (metodoActivo() === 'PLIN') {
+            <div class="plin-qr-layout">
+              <div class="qr-card-discreta">
+                <div class="qr-header-bar">
+                  <span class="qr-bancos-tag">BBVA &bull; INTERBANK &bull; SCOTIABANK &bull; BANBIF</span>
+                  <span class="qr-timer-pill" [class.expirando]="segundosRestantesPlin() < 60">
+                    <mat-icon>schedule</mat-icon>
+                    <span>{{ tiempoPlinFormateado() }}</span>
+                  </span>
+                </div>
+
+                <div class="qr-display-box">
+                  @if (qrDataUrl()) {
+                    <img [src]="qrDataUrl()" alt="Código QR Plin" class="qr-img" />
+                  } @else {
+                    <mat-spinner diameter="36"></mat-spinner>
+                  }
+                </div>
+
+                <div class="qr-ayuda-txt">
+                  Escanea el código con la cámara de tu app bancaria asociada a Plin.
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="btn-pagar-principal"
+                (click)="pagarConPlin()"
+                [disabled]="procesando()"
+              >
+                @if (procesando()) {
+                  <mat-spinner diameter="20" class="spinner-inline"></mat-spinner>
+                  <span>{{ mensajeProcesando() }}</span>
+                } @else {
+                  <mat-icon>check_circle</mat-icon>
+                  <span>Confirmar Pago Plin Realizado (S/ {{ totalMonto | number:'1.2-2' }})</span>
+                }
+              </button>
+            </div>
+          }
+
+        </div>
+      }
+
+    </mat-dialog-content>
+
+    <!-- Footer Discreto -->
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <div class="ssl-guarantee">
+        <mat-icon>verified_user</mat-icon>
+        <span>Pago 100% seguro y protegido</span>
+      </div>
+      <button mat-button type="button" class="btn-cancelar" (click)="cancelar()" [disabled]="procesando() || cargandoMetodo()">
+        Cancelar
+      </button>
+    </mat-dialog-actions>
+
+  }
+
+</div>

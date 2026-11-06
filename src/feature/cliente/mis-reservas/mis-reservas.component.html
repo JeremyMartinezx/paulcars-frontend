@@ -1,0 +1,366 @@
+<section class="mis-reservas-page">
+  <header class="reservas-hero">
+    <div class="hero-top-nav">
+      <a routerLink="/cliente" class="btn-regresar-portal">
+        <mat-icon>arrow_back</mat-icon>
+        <span>Volver a Mi Portal</span>
+      </a>
+      <div class="client-badge">
+        <mat-icon>assignment</mat-icon>
+        <span>GESTIÓN DE SOLICITUDES &bull; PAUL CAR'S</span>
+      </div>
+    </div>
+
+    <div class="hero-header-row">
+      <div>
+        <h1>Mis Reservas</h1>
+        <p class="hero-subtitle">
+          Revisa tus solicitudes y alquileres vigentes, fechas de entrega y devolución, y tus comprobantes oficiales.
+        </p>
+      </div>
+
+      <div class="hero-action-buttons">
+        <a mat-flat-button class="btn-gold" routerLink="/reservar">
+          <mat-icon>calendar_month</mat-icon>
+          <span>Nueva reserva</span>
+        </a>
+      </div>
+    </div>
+
+
+  </header>
+
+  <main class="reservas-content-card">
+    <div class="filtros-bar">
+      <div class="filtros-pills">
+        <!-- Botón inteligente profesional: Para Hoy (Primero antes de Todas) -->
+        <button
+          type="button"
+          class="filtro-btn btn-filtro-hoy"
+          [class.active]="soloHoy()"
+          (click)="toggleSoloHoy()"
+        >
+          <mat-icon class="ic-hoy-calendar">event_available</mat-icon>
+          <span>Para Hoy ({{ fechaHoyLegible() }})</span>
+          @if (conteoParaHoy() > 0) {
+            <span class="pill-cnt pill-cnt-hoy">({{ conteoParaHoy() }})</span>
+          }
+        </button>
+
+        <button
+          type="button"
+          class="filtro-btn"
+          [class.active]="filtroEstado() === 'TODOS' && !soloHoy()"
+          (click)="cambiarFiltro('TODOS')"
+        >
+          <span>Todas</span>
+          <span class="pill-cnt">({{ totalReservas() }})</span>
+        </button>
+        <button
+          type="button"
+          class="filtro-btn"
+          [class.active]="filtroEstado() === 'PENDIENTE' && !soloHoy()"
+          (click)="cambiarFiltro('PENDIENTE')"
+        >
+          <span>Pendientes</span>
+          @if (conteoPendientes() > 0) {
+            <span class="pill-cnt">({{ conteoPendientes() }})</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="filtro-btn"
+          [class.active]="filtroEstado() === 'RESERVADO' && !soloHoy()"
+          (click)="cambiarFiltro('RESERVADO')"
+        >
+          <span>Reservadas</span>
+          @if (conteoReservadas() > 0) {
+            <span class="pill-cnt">({{ conteoReservadas() }})</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="filtro-btn"
+          [class.active]="filtroEstado() === 'ACTIVO' && !soloHoy()"
+          (click)="cambiarFiltro('ACTIVO')"
+        >
+          <span>En ruta</span>
+          @if (conteoEnRuta() > 0) {
+            <span class="pill-cnt">({{ conteoEnRuta() }})</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="filtro-btn"
+          [class.active]="filtroEstado() === 'FINALIZADO' && !soloHoy()"
+          (click)="cambiarFiltro('FINALIZADO')"
+        >
+          <span>Finalizadas</span>
+          @if (conteoFinalizadasTotal() > 0) {
+            <span class="pill-cnt">({{ conteoFinalizadasTotal() }})</span>
+          }
+        </button>
+      </div>
+
+      <div class="filtros-meta-right">
+        <div class="conteo-resumen">
+          <span>Mostrando <strong>{{ rangoInicio() }}-{{ rangoFin() }}</strong> de <strong>{{ alquileresFiltrados().length }}</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subfiltros contextuales para Reservadas y Finalizadas -->
+    @if (filtroEstado() === 'RESERVADO' && !soloHoy()) {
+      <div class="subfiltros-row animate-fade-in">
+        <span class="subfiltro-label">
+          <mat-icon class="subfiltro-icon">tune</mat-icon>
+          Estado de reserva:
+        </span>
+        <button
+          type="button"
+          class="subfiltro-pill"
+          [class.activo]="subfiltroReserva() === 'TODAS'"
+          (click)="cambiarSubfiltroReserva('TODAS')"
+        >
+          <span>Todas</span>
+          <span class="subfiltro-cnt">({{ conteoReservadas() }})</span>
+        </button>
+        <button
+          type="button"
+          class="subfiltro-pill subfiltro-pagado"
+          [class.activo]="subfiltroReserva() === 'PAGADAS'"
+          (click)="cambiarSubfiltroReserva('PAGADAS')"
+        >
+          <mat-icon class="subfiltro-pill-ic">verified</mat-icon>
+          <span>Reservado pagado</span>
+          <span class="subfiltro-cnt">({{ conteoReservasPagadas() }})</span>
+        </button>
+        <button
+          type="button"
+          class="subfiltro-pill subfiltro-por-pagar"
+          [class.activo]="subfiltroReserva() === 'POR_PAGAR'"
+          (click)="cambiarSubfiltroReserva('POR_PAGAR')"
+        >
+          <mat-icon class="subfiltro-pill-ic">schedule</mat-icon>
+          <span>Reservado por pagar</span>
+          <span class="subfiltro-cnt">({{ conteoReservasPorPagar() }})</span>
+        </button>
+      </div>
+    }
+
+
+
+    @if (alquileresFiltrados().length === 0) {
+      <div class="empty-reservas-box">
+        <div class="empty-icon-wrap">
+          <mat-icon>directions_car</mat-icon>
+        </div>
+        <h3>No se encontraron reservas</h3>
+        <p>No tienes reservas registradas con el filtro seleccionado. Explora nuestro catálogo y solicita tu vehículo en minutos.</p>
+        <div class="empty-actions">
+          <a mat-flat-button class="btn-explorar-catalogo" routerLink="/catalogo">
+            <mat-icon>search</mat-icon>
+            Explorar catálogo
+          </a>
+          <a mat-stroked-button class="btn-solicitar-reserva" routerLink="/reservar">
+            <mat-icon>calendar_month</mat-icon>
+            Solicitar reserva
+          </a>
+        </div>
+      </div>
+    } @else {
+      <div class="table-responsive-wrapper">
+        <table class="reservas-table" [class.sin-col-accion]="!mostrarColumnaAccion()" aria-label="Tabla de Mis Reservas">
+          <thead>
+            <tr>
+              <th scope="col" class="col-vehiculo">VEHÍCULO</th>
+              <th scope="col" class="col-periodo">PERIODO</th>
+              <th scope="col" class="col-estado" style="text-align: center;">ESTADO</th>
+              @if (mostrarColumnaAccion()) {
+                <th scope="col" class="col-accion" style="text-align: center;">ACCIÓN</th>
+              }
+              <th scope="col" class="col-comprobante" style="text-align: center;">COMPROBANTE</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (alq of alquileresPaginados(); track alq.idAlquiler) {
+              @let liq = obtenerLiquidacion(alq);
+              @let est = (alq.estado?.nombreEstado || '').toUpperCase();
+              <tr class="table-row">
+                <td class="col-vehiculo">
+                  <div class="vehiculo-cell">
+                    <img
+                      [src]="imagenVehiculo(alq)"
+                      [alt]="nombreVehiculo(alq)"
+                      class="vehiculo-thumb"
+                    />
+                    <div class="vehiculo-text">
+                      <strong class="vehiculo-nombre">
+                        {{ nombreVehiculo(alq) }}
+                      </strong>
+                      <span class="categoria-label">{{ liq.tipoVehiculo }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <td class="col-periodo">
+                  <div class="periodo-asesor-cell">
+                    <div class="periodo-linea">
+                      <mat-icon class="ic-periodo">calendar_today</mat-icon>
+                      <strong class="fecha-txt">{{ alq.fechaInicio }}</strong>
+                      <span class="hora-badge">{{ alq.horaRecojo || '10:00' }} hrs</span>
+                    </div>
+                    <div class="periodo-linea sub">
+                      <mat-icon class="ic-periodo">event_repeat</mat-icon>
+                      <span class="fecha-txt">{{ alq.fechaFinEstimada }}</span>
+                      <span class="hora-badge sub">{{ alq.horaDevolucion || '18:00' }} hrs</span>
+                    </div>
+                  </div>
+                </td>
+
+
+                <!-- COLUMNA ESTADO -->
+                <td class="col-estado" style="text-align: center;">
+                  <div class="estado-cell-wrapper">
+                    @if (est === 'PENDIENTE') {
+                      <span class="badge-estado badge-pendiente">Pendiente</span>
+                    } @else if (est === 'RESERVADO' || est === 'APROBADO' || est === 'PAGADO' || est === 'CONFIRMADO') {
+                      @if (esReservaPagada(alq)) {
+                        <span class="badge-estado badge-reservado-pagado">Reservado &bull; Pagado</span>
+                      } @else {
+                        <span class="badge-estado badge-reservado-por-pagar">Reservado &bull; Por pagar</span>
+                      }
+                    } @else if (est === 'PAGO_EN_REVISION') {
+                      <span class="badge-estado badge-revision">Pago en revisión</span>
+                    } @else if (est === 'ACTIVO' || est === 'EN_CURSO' || est === 'EN CURSO') {
+                      <span class="badge-estado badge-en-ruta">En ruta</span>
+                    } @else if (esFinalizadoTotal(alq)) {
+                      @if (esFinalizadoConDeuda(alq)) {
+                        <span class="badge-estado badge-finalizado-deuda">Finalizado &bull; Saldo pendiente</span>
+                      } @else {
+                        <span class="badge-estado badge-finalizado">Finalizado</span>
+                      }
+                    } @else if (est === 'CANCELADO_SIN_STOCK') {
+                      <span class="badge-estado badge-sin-stock" title="Vehículo agotado por alta demanda">Agotado por alta demanda</span>
+                      <small class="nota-sin-stock" style="display:block; font-size:10.5px; color:#b91c1c; margin-top:3px; max-width:140px; line-height:1.2;">Unidades agotadas por alta demanda</small>
+                    } @else if (est === 'RECHAZADO' || est === 'RECHAZADO_DOCUMENTACION') {
+                      <span class="badge-estado badge-rechazado" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;">Rechazado &bull; Docs</span>
+                    } @else if (est === 'CANCELADO') {
+                      <span class="badge-estado badge-cancelado">Cancelado</span>
+                    } @else {
+                      <span class="badge-estado badge-finalizado">{{ est }}</span>
+                    }
+                  </div>
+                </td>
+
+                <!-- COLUMNA ACCIÓN (Oculta en Finalizadas) -->
+                @if (mostrarColumnaAccion()) {
+                  <td class="col-accion" style="text-align: center;">
+                    @if (est === 'CANCELADO_SIN_STOCK') {
+                      <a class="btn-tabla-accion btn-tabla-explorar" routerLink="/catalogo" title="Explorar otros vehículos disponibles" style="background:#0d1b3e; color:#ffffff; text-decoration:none;">
+                        <mat-icon class="btn-ic" style="color:#e5a93c;">search</mat-icon>
+                        <span>Catálogo</span>
+                      </a>
+                    } @else if (est === 'PENDIENTE') {
+                      <button
+                        type="button"
+                        class="btn-tabla-accion btn-tabla-cancelar"
+                        (click)="confirmarCancelarSolicitud(alq)"
+                      >
+                        <mat-icon class="btn-ic">close</mat-icon>
+                        <span>Cancelar</span>
+                      </button>
+                    } @else if ((est === 'RESERVADO' || est === 'APROBADO') && esReservaPorPagar(alq)) {
+                      <button
+                        type="button"
+                        class="btn-tabla-accion btn-tabla-pagar"
+                        (click)="abrirPagoAnticipado(alq)"
+                      >
+                        <mat-icon class="btn-ic">credit_card</mat-icon>
+                        <span>Pagar</span>
+                      </button>
+                    } @else if (esFinalizadoConDeuda(alq)) {
+                      <button
+                        type="button"
+                        class="btn-tabla-accion btn-tabla-pagar-saldo"
+                        (click)="abrirPagoAnticipado(alq, 'DEUDA')"
+                      >
+                        <mat-icon class="btn-ic">credit_card</mat-icon>
+                        <span>Pagar saldo</span>
+                      </button>
+                    } @else {
+                      <span class="tabla-vacio-dash">&mdash;</span>
+                    }
+                  </td>
+                }
+
+                <!-- COLUMNA COMPROBANTE (Nueva columna separada) -->
+                <td class="col-comprobante" style="text-align: center;">
+                  @let pagado = esReservaPagada(alq) || est === 'PAGADO' || est === 'CONFIRMADO' || est === 'ACTIVO' || est === 'EN_CURSO' || est === 'EN CURSO' || est === 'FINALIZADO';
+                  @if (est === 'CANCELADO' || est === 'RECHAZADO' || est === 'CANCELADO_SIN_STOCK' || est === 'RECHAZADO_DOCUMENTACION') {
+                    <span class="tabla-vacio-dash">&mdash;</span>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn-tabla-comprobante"
+                      (click)="abrirModalLiquidacion(alq)"
+                    >
+                      <mat-icon class="btn-ic">
+                        {{ est === 'PENDIENTE' ? 'description' : (!pagado ? 'event_note' : 'receipt_long') }}
+                      </mat-icon>
+                      <span>
+                        {{ est === 'PENDIENTE' ? 'Solicitud' : (!pagado ? 'Reserva' : 'Ver') }}
+                      </span>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="paginacion-bar">
+        <div class="paginacion-info">
+          Página <strong>{{ paginaActual() }}</strong> de <strong>{{ totalPaginas() }}</strong>
+        </div>
+
+        <div class="paginacion-controles">
+          <button
+            mat-stroked-button
+            class="btn-flecha"
+            [disabled]="paginaActual() === 1"
+            (click)="paginaAnterior()"
+          >
+            <mat-icon>chevron_left</mat-icon>
+            <span>Anterior</span>
+          </button>
+
+          <button
+            mat-stroked-button
+            class="btn-flecha"
+            [disabled]="paginaActual() >= totalPaginas()"
+            (click)="paginaSiguiente()"
+          >
+            <span>Siguiente</span>
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      </div>
+    }
+  </main>
+
+  <footer class="soporte-footer-card">
+    <div class="soporte-icon-wrap">
+      <mat-icon>support_agent</mat-icon>
+    </div>
+    <div class="soporte-text">
+      <strong>Soporte y Asistencia de Counter Paul Car's</strong>
+      <p>¿Necesitas coordinar un recojo especial o extender tu alquiler? Nuestro equipo en Lima te atiende las 24 horas vía WhatsApp o en counter físico.</p>
+    </div>
+    <a mat-stroked-button class="btn-contacto-soporte" href="https://wa.me/51959137712" target="_blank">
+      <mat-icon>chat</mat-icon>
+      Contactar por WhatsApp
+    </a>
+  </footer>
+</section>
