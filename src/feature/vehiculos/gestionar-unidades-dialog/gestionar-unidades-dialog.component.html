@@ -1,0 +1,274 @@
+<div class="dialog-container">
+  <header class="dialog-header">
+    <div class="header-left">
+      <div class="dialog-icon-circle">
+        <mat-icon>directions_car</mat-icon>
+      </div>
+      <div class="dialog-header-text">
+        <h2 class="dialog-title">{{ nombreVehiculo }}</h2>
+        <span class="dialog-subtitle">{{ esAdmin() ? 'Control de placas, unidades físicas y disponibilidad operativa' : 'Consulta de unidades y disponibilidad física en patio' }}</span>
+      </div>
+    </div>
+    <button mat-icon-button (click)="cerrar()" class="btn-close-header" aria-label="Cerrar modal">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  <div class="dialog-content">
+    <!-- Barra superior de conteo y botón agregar -->
+    <div class="stats-bar">
+      <div
+        class="stat-pill clickable-pill"
+        (click)="setFiltroEstado('TODOS')"
+        [class.pill-active]="filtroEstado() === 'TODOS'"
+        matTooltip="Ver todas las unidades ordenadas por disponibilidad"
+      >
+        <span class="stat-label">Total Unidades:</span>
+        <strong class="stat-num">{{ unidades().length }}</strong>
+      </div>
+
+      <!-- Botón de filtro único para seleccionar Disponible, Mantenimiento o Limpieza -->
+      <button
+        mat-stroked-button
+        type="button"
+        class="btn-filtro-estado"
+        [class.filtro-activo]="filtroEstado() !== 'TODOS'"
+        [matMenuTriggerFor]="menuFiltroEstado"
+        matTooltip="Filtrar por estado operativo"
+      >
+        @if (filtroEstado() === 'TODOS') {
+          <mat-icon class="icon-filtro">filter_list</mat-icon>
+        } @else if (filtroEstado() === 'DISPONIBLE') {
+          <span class="dot-estado disp"></span>
+        } @else if (filtroEstado() === 'MANTENIMIENTO') {
+          <span class="dot-estado mant"></span>
+        } @else if (filtroEstado() === 'LIMPIEZA') {
+          <span class="dot-estado limp"></span>
+        } @else if (filtroEstado() === 'ALQUILADO') {
+          <span class="dot-estado alq"></span>
+        }
+        <span class="lbl-filtro">{{ etiquetaFiltro() }}</span>
+        <mat-icon class="icon-flecha">arrow_drop_down</mat-icon>
+      </button>
+
+      <mat-menu #menuFiltroEstado="matMenu" class="menu-filtro-unidades" xPosition="after">
+        <button mat-menu-item (click)="setFiltroEstado('TODOS')" [class.active-item]="filtroEstado() === 'TODOS'">
+          <mat-icon>apps</mat-icon>
+          <span>Todos los estados ({{ unidades().length }})</span>
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="setFiltroEstado('DISPONIBLE')" [class.active-item]="filtroEstado() === 'DISPONIBLE'">
+          <span class="dot-estado disp"></span>
+          <span>Disponible ({{ conteoPorEstado('DISPONIBLE') }})</span>
+        </button>
+        <button mat-menu-item (click)="setFiltroEstado('MANTENIMIENTO')" [class.active-item]="filtroEstado() === 'MANTENIMIENTO'">
+          <span class="dot-estado mant"></span>
+          <span>Mantenimiento ({{ conteoPorEstado('MANTENIMIENTO') }})</span>
+        </button>
+        <button mat-menu-item (click)="setFiltroEstado('LIMPIEZA')" [class.active-item]="filtroEstado() === 'LIMPIEZA'">
+          <span class="dot-estado limp"></span>
+          <span>Limpieza ({{ conteoPorEstado('LIMPIEZA') }})</span>
+        </button>
+        <button mat-menu-item (click)="setFiltroEstado('ALQUILADO')" [class.active-item]="filtroEstado() === 'ALQUILADO'">
+          <span class="dot-estado alq"></span>
+          <span>Alquilado ({{ conteoPorEstado('ALQUILADO') }})</span>
+        </button>
+      </mat-menu>
+
+      <div class="stat-spacer"></div>
+      @if (esAdmin()) {
+        <button mat-flat-button color="primary" class="btn-nueva-unidad" (click)="mostrarFormulario.set(!mostrarFormulario())">
+          <mat-icon>{{ mostrarFormulario() ? 'expand_less' : 'add' }}</mat-icon>
+          <span>{{ mostrarFormulario() ? 'Ocultar Formulario' : 'Añadir Nueva Placa' }}</span>
+        </button>
+      }
+    </div>
+
+    <!-- Formulario para agregar nueva unidad física -->
+    @if (esAdmin() && mostrarFormulario()) {
+      <div class="form-nueva-unidad card-box">
+        <h3><mat-icon>pin</mat-icon> Registrar Nueva Unidad a la Flota</h3>
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="form-item">
+            <mat-label>Número de Placa</mat-label>
+            <input matInput [(ngModel)]="nuevaPlaca" placeholder="Ej: ABC-125" maxlength="15" uppercase>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-item">
+            <mat-label>Sede de Asignación</mat-label>
+            <mat-select [(ngModel)]="nuevaSede">
+              <mat-option value="MIRAFLORES">Sede Miraflores</mat-option>
+              <mat-option value="AEROPUERTO">Sede Aeropuerto</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-actions">
+          <button mat-stroked-button class="btn-cancelar-unidad" (click)="mostrarFormulario.set(false)">Cancelar</button>
+          <button mat-flat-button class="btn-registrar-unidad" [disabled]="guardando() || !nuevaPlaca.trim()" (click)="agregarNuevaUnidad()">
+            <mat-icon>check</mat-icon>
+            <span>{{ guardando() ? 'Guardando...' : 'Registrar Unidad' }}</span>
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Tabla de unidades físicas -->
+    <div class="table-wrap card-box">
+      @if (cargando()) {
+        <div class="cargando-box">
+          <mat-icon class="spin">sync</mat-icon>
+          <span>Cargando flota de unidades...</span>
+        </div>
+      } @else if (unidades().length === 0) {
+        <div class="empty-unidades">
+          <mat-icon>car_repair</mat-icon>
+          <h4>No hay unidades físicas registradas para este modelo</h4>
+          <p>Utiliza el botón de arriba para registrar la primera placa de la flota.</p>
+        </div>
+      } @else if (unidadesFiltradas().length === 0) {
+        <div class="empty-unidades">
+          <mat-icon>filter_alt_off</mat-icon>
+          <h4>No hay placas en estado {{ etiquetaFiltro() }}</h4>
+          <p>Prueba cambiando el filtro a otro estado o restablece el filtro.</p>
+          <button mat-stroked-button color="primary" class="btn-restablecer-filtro" (click)="setFiltroEstado('TODOS')">
+            <mat-icon>apps</mat-icon>
+            <span>Ver todas las placas</span>
+          </button>
+        </div>
+      } @else {
+        <table class="unidades-table">
+          <thead>
+            <tr>
+              <th>Placa</th>
+              <th>Sede</th>
+              <th>Estado Operativo</th>
+              @if (esAdmin()) {
+                <th class="th-acciones">Acciones</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of unidadesPaginadas(); track u.idUnidad) {
+              <tr>
+                <td class="td-placa">
+                  <span class="placa-texto">{{ u.placa }}</span>
+                </td>
+                <td>
+                  <span class="sede-tag">{{ u.sede || 'MIRAFLORES' }}</span>
+                </td>
+                <td>
+                  @if (esAdmin()) {
+                    <mat-form-field appearance="outline" class="select-estado-mini">
+                      <mat-select
+                        [value]="obtenerEstadoValor(u)"
+                        (selectionChange)="cambiarEstado(u, $event.value)"
+                      >
+                        @for (est of estadosPosibles; track est.valor) {
+                          <mat-option [value]="est.valor">
+                            <span class="dot-estado" [ngClass]="est.color"></span>
+                            {{ est.label }}
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  } @else {
+                    <span class="badge-estado-readonly" [ngClass]="'estado-' + (obtenerEstadoValor(u).toLowerCase())">
+                      <span class="dot-estado" [ngClass]="obtenerColorDot(obtenerEstadoValor(u))"></span>
+                      {{ obtenerEstadoLabel(obtenerEstadoValor(u)) }}
+                    </span>
+                  }
+                </td>
+                @if (esAdmin()) {
+                <td class="td-acciones">
+                  <button
+                    mat-icon-button
+                    color="warn"
+                    [matMenuTriggerFor]="menuEliminar"
+                    matTooltip="Eliminar placa"
+                    aria-label="Opciones de eliminación"
+                  >
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+
+                  <mat-menu #menuEliminar="matMenu" xPosition="before" class="menu-eliminar-placa">
+                    <div class="menu-eliminar-header" (click)="$event.stopPropagation()">
+                      <mat-icon class="icon-advertencia">warning_amber</mat-icon>
+                      <div class="menu-eliminar-info">
+                        <strong>¿Eliminar placa {{ u.placa }}?</strong>
+                        <p>Esta unidad física se dará de baja del patio.</p>
+                      </div>
+                    </div>
+                    <mat-divider></mat-divider>
+                    <button mat-menu-item (click)="eliminarUnidad(u)" class="item-menu-danger">
+                      <mat-icon color="warn">delete_forever</mat-icon>
+                      <span class="texto-rojo-eliminar">Sí, eliminar placa</span>
+                    </button>
+                    <button mat-menu-item>
+                      <mat-icon>close</mat-icon>
+                      <span>Cancelar</span>
+                    </button>
+                  </mat-menu>
+                </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <!-- Paginación compacta: exactamente 3 placas por página -->
+        @if (unidadesFiltradas().length > 0) {
+          <div class="paginacion-barra">
+            <div class="paginacion-info">
+              Mostrando <strong>{{ rangoInicio() }}-{{ rangoFin() }}</strong> de <strong>{{ unidadesFiltradas().length }}</strong> placas
+            </div>
+
+            @if (totalPaginas() > 1) {
+              <div class="paginacion-controles">
+                <button
+                  type="button"
+                  class="pagina-pill pagina-arrow"
+                  (click)="paginaAnterior()"
+                  matTooltip="Página anterior"
+                  aria-label="Página anterior"
+                >
+                  <mat-icon>chevron_left</mat-icon>
+                </button>
+
+                <div class="paginas-pills">
+                  @for (p of paginasArray(); track p) {
+                    <button
+                      type="button"
+                      class="pagina-pill"
+                      [class.activa]="p === paginaActual()"
+                      (click)="irAPagina(p)"
+                    >
+                      {{ p }}
+                    </button>
+                  }
+                </div>
+
+                <button
+                  type="button"
+                  class="pagina-pill pagina-arrow"
+                  (click)="paginaSiguiente()"
+                  matTooltip="Página siguiente"
+                  aria-label="Página siguiente"
+                >
+                  <mat-icon>chevron_right</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+  </div>
+
+  <footer class="dialog-footer">
+    <button mat-flat-button color="primary" class="btn-listo" (click)="cerrar()">
+      <mat-icon>close</mat-icon>
+      <span>Cerrar</span>
+    </button>
+  </footer>
+</div>

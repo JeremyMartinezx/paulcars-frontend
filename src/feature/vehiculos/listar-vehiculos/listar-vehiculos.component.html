@@ -1,0 +1,285 @@
+<section class="page">
+  <app-back-button></app-back-button>
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Gestión de flota e inventario</p>
+      <h1>Vehículos</h1>
+      <p class="description">
+        @if (esAdmin()) {
+          Catálogo comercial de modelos y asignación de placas físicas en patio.
+        } @else {
+          Consulta la disponibilidad de flota física y unidades disponibles en patio.
+        }
+      </p>
+    </div>
+
+    @if (esAdmin()) {
+      <button mat-flat-button color="primary" (click)="abrirNuevo()">
+        <mat-icon>add_circle</mat-icon>
+        Nuevo modelo
+      </button>
+    }
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-filtros">
+      <div class="search-box-wrapper">
+        <mat-icon class="search-box-icon">search</mat-icon>
+        <input
+          type="text"
+          class="search-box-input"
+          [ngModel]="busqueda()"
+          (ngModelChange)="buscar($event)"
+          placeholder="Buscar por marca o modelo"
+          aria-label="Buscar por marca o modelo"
+        />
+        @if (busqueda()) {
+          <button type="button" class="btn-clear-search" (click)="buscar('')" aria-label="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </div>
+
+      <div class="selects-filtros-wrap">
+        <!-- Select 1: Categoría -->
+        <div class="select-box">
+          <label class="select-label" for="select-categoria">
+            <mat-icon class="select-label-icon">category</mat-icon>
+            Categoría:
+          </label>
+          <div class="custom-select-wrapper">
+            <select
+              id="select-categoria"
+              class="custom-select"
+              [ngModel]="filtroTipo()"
+              (ngModelChange)="filtrarPorTipo($event)"
+              aria-label="Filtrar por categoría"
+            >
+              <option value="TODOS">Todas las categorías</option>
+              <option value="SEDAN">Sedán</option>
+              <option value="SUV">SUV</option>
+              <option value="PICKUP">Pickup</option>
+              <option value="HATCHBACK">Hatchback</option>
+            </select>
+            <mat-icon class="select-arrow">expand_more</mat-icon>
+          </div>
+        </div>
+
+        <!-- Select 2: Disponibilidad -->
+        <div class="select-box">
+          <label class="select-label" for="select-disponibilidad">
+            <mat-icon class="select-label-icon">tune</mat-icon>
+            Disponibilidad:
+          </label>
+          <div class="custom-select-wrapper">
+            <select
+              id="select-disponibilidad"
+              class="custom-select"
+              [ngModel]="filtroEstado()"
+              (ngModelChange)="filtrarPorEstado($event)"
+              aria-label="Filtrar por disponibilidad"
+            >
+              <option value="TODOS">Todos los estados</option>
+              <option value="CON_STOCK">Con stock</option>
+              <option value="SIN_STOCK">Sin stock</option>
+              <option value="NO_DISPONIBLE">No disponible</option>
+            </select>
+            <mat-icon class="select-arrow">expand_more</mat-icon>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <table mat-table [dataSource]="vehiculosPaginados()">
+      <ng-container matColumnDef="vehiculo">
+        <th mat-header-cell *matHeaderCellDef>Vehículo</th>
+        <td mat-cell *matCellDef="let v">
+          <div class="vehiculo-cell">
+            @if (imagenVehiculo(v)) {
+              <img class="vehiculo-foto" [src]="imagenVehiculo(v)" [alt]="v.modelo?.modelo || v.nombreModelo">
+            } @else {
+              <span class="vehiculo-icon"><mat-icon>{{ iconoPorTipo(v.tipo?.nombreTipo || v.tipo) }}</mat-icon></span>
+            }
+            <div>
+              <strong>{{ v.modelo?.marca?.nombreMarca || v.marca?.nombreMarca || v.marca }} {{ v.modelo?.modelo || v.nombreModelo }}</strong>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="tipo">
+        <th mat-header-cell *matHeaderCellDef>Tipo</th>
+        <td mat-cell *matCellDef="let v">{{ formatearTipo(v.tipo?.nombreTipo || v.tipo) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="anio">
+        <th mat-header-cell *matHeaderCellDef class="col-centrada">Año</th>
+        <td mat-cell *matCellDef="let v" class="col-centrada">{{ v.anio }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="precio">
+        <th mat-header-cell *matHeaderCellDef>Precio/día</th>
+        <td mat-cell *matCellDef="let v">
+          <strong>S/ {{ v.precioDia }}</strong>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="unidadesTotales">
+        <th mat-header-cell *matHeaderCellDef class="col-centrada">Unidades Totales</th>
+        <td mat-cell *matCellDef="let v" class="col-centrada">
+          <span class="chip-total-unidades">{{ v.unidadesTotales ?? v.unidades?.length ?? 1 }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="unidadesDisponibles">
+        <th mat-header-cell *matHeaderCellDef class="col-centrada">Unidades Disponibles</th>
+        <td mat-cell *matCellDef="let v" class="col-centrada">
+          @if (v.activo === false || v.estado?.nombreEstado === 'NO DISPONIBLE') {
+            <span class="badge badge-bloqueado">
+              No disponible
+            </span>
+          } @else {
+            <span class="badge" [class.badge-disp]="(v.unidadesDisponibles ?? 0) > 0" [class.badge-nodisp]="(v.unidadesDisponibles ?? 0) === 0">
+              {{ v.unidadesDisponibles ?? 0 }}
+            </span>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="acciones">
+        <th mat-header-cell *matHeaderCellDef class="acciones-header">Acciones</th>
+        <td mat-cell *matCellDef="let v" class="acciones-cell">
+          <div class="acciones-contenedor">
+            <button
+              mat-stroked-button
+              class="btn-gestionar-placas"
+              [matTooltip]="esAdmin() ? 'Ver placas, añadir unidades y cambiar estado individual' : 'Consultar placas y unidades disponibles en patio'"
+              (click)="gestionarUnidades(v)"
+            >
+              <mat-icon>pin</mat-icon>
+              <span>{{ esAdmin() ? 'Gestionar Placas' : 'Ver Placas' }}</span>
+            </button>
+            @if (esAdmin()) {
+              <button
+                mat-icon-button
+                class="btn-toggle-estado"
+                [matTooltip]="esDisponible(v) ? 'Desactivar vehículo' : 'Activar vehículo'"
+                (click)="toggleDisponibilidad(v)"
+              >
+                @if (esDisponible(v)) {
+                  <!-- Carrito tachado con línea diagonal cruzada -->
+                  <svg
+                    class="icono-car-svg"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="21"
+                    height="21"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                    <path d="M15.584 15.588a2 2 0 0 0 2.828 2.83" />
+                    <path d="M5 17h-2v-6l2 -5h1m4 0h4l4 5h1a2 2 0 0 1 2 2v4m-6 0h-6m-6 -6h8m4 0h3m-6 -3v-2" />
+                    <path d="M3 3l18 18" />
+                  </svg>
+                } @else {
+                  <!-- Carrito activo -->
+                  <svg
+                    class="icono-car-svg"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="21"
+                    height="21"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                    <path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                    <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" />
+                  </svg>
+                }
+              </button>
+            }
+            @if (esAdmin()) {
+              <button mat-icon-button matTooltip="Editar ficha y fotos" (click)="editar(v)">
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
+            @if (esAdmin()) {
+              <button mat-icon-button matTooltip="Eliminar modelo" (click)="eliminar(v)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+      <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
+    </table>
+
+    @if (vehiculosFiltrados().length > 0) {
+      <div class="paginacion-barra">
+        <div class="paginacion-info">
+          Mostrando <strong>{{ rangoInicio() }}-{{ rangoFin() }}</strong> de <strong>{{ vehiculosFiltrados().length }}</strong> modelos
+        </div>
+
+        @if (totalPaginas() > 1) {
+          <div class="paginacion-controles">
+            <button
+              mat-stroked-button
+              type="button"
+              class="btn-flecha"
+              (click)="paginaAnterior()"
+              [disabled]="paginaActual() === 1"
+              matTooltip="Página anterior"
+            >
+              <mat-icon>chevron_left</mat-icon>
+              <span>Anterior</span>
+            </button>
+
+            <div class="paginas-pills">
+              @for (p of paginasArray(); track p) {
+                <button
+                  type="button"
+                  class="pagina-pill"
+                  [class.activa]="p === paginaActual()"
+                  (click)="irAPagina(p)"
+                >
+                  {{ p }}
+                </button>
+              }
+            </div>
+
+            <button
+              mat-stroked-button
+              type="button"
+              class="btn-flecha"
+              (click)="paginaSiguiente()"
+              [disabled]="paginaActual() === totalPaginas()"
+              matTooltip="Página siguiente"
+            >
+              <span>Siguiente</span>
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    @if (vehiculosFiltrados().length === 0) {
+      <div class="empty-state">
+        <mat-icon>directions_car_filled</mat-icon>
+        <p>No se encontraron modelos con los filtros seleccionados.</p>
+      </div>
+    }
+  </div>
+</section>

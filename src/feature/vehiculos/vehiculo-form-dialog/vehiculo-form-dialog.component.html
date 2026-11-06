@@ -1,0 +1,128 @@
+<div class="vehiculo-dialog">
+  <div class="dialog-header">
+    <div class="dialog-icon-circle">
+      <mat-icon>directions_car</mat-icon>
+    </div>
+    <div class="dialog-header-text">
+      <h2 mat-dialog-title class="dialog-title">{{ esEdicion ? 'Editar vehículo' : 'Nuevo vehículo' }}</h2>
+      <span class="dialog-subtitle">Ficha técnica y estado de disponibilidad en flota</span>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="vehiculo-form">
+    <mat-dialog-content class="modal-content">
+      <div class="grid-2">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Modelo</mat-label>
+          <mat-select formControlName="idModelo">
+            @for (m of catalogos?.modelos; track m.idModelo) {
+              <mat-option [value]="m.idModelo">{{ m.marca.nombreMarca }} {{ m.modelo }}</mat-option>
+            }
+          </mat-select>
+          @if (form.controls.idModelo.hasError('required') && form.controls.idModelo.touched) {
+            <mat-error>Selecciona un modelo.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Tipo</mat-label>
+          <mat-select formControlName="idTipo">
+            @for (t of catalogos?.tiposVehiculo; track t.idTipo) {
+              <mat-option [value]="t.idTipo">{{ t.nombreTipo }}</mat-option>
+            }
+          </mat-select>
+          @if (form.controls.idTipo.hasError('required') && form.controls.idTipo.touched) {
+            <mat-error>Selecciona un tipo.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="grid-2">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Color</mat-label>
+          <input matInput formControlName="color" placeholder="Blanco">
+          @if (form.controls.color.hasError('required') && form.controls.color.touched) {
+            <mat-error>El color es obligatorio.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Año</mat-label>
+          <input matInput type="number" formControlName="anio">
+          @if (form.controls.anio.hasError('required') && form.controls.anio.touched) {
+            <mat-error>Obligatorio.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="grid-2">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Combustible</mat-label>
+          <mat-select formControlName="idCombustible">
+            @for (c of catalogos?.combustibles; track c.idCombustible) {
+              <mat-option [value]="c.idCombustible">{{ c.nombreCombustible }}</mat-option>
+            }
+          </mat-select>
+          @if (form.controls.idCombustible.hasError('required') && form.controls.idCombustible.touched) {
+            <mat-error>Selecciona combustible.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Precio por día (S/)</mat-label>
+          <input matInput type="number" formControlName="precioDia">
+          @if (form.controls.precioDia.hasError('required') && form.controls.precioDia.touched) {
+            <mat-error>Obligatorio.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <!-- Gestor de galería de 4 imágenes -->
+      <div class="galeria">
+        <div class="galeria-titulo">
+          <mat-icon>photo_library</mat-icon>
+          <span>Galería del vehículo (4 fotos)</span>
+        </div>
+        <div class="galeria-grid">
+          @for (foto of fotos(); track foto.orden) {
+            <div class="foto-slot">
+              <span class="foto-etiqueta">{{ foto.etiqueta }}</span>
+              @if (foto.preview) {
+                <img [src]="foto.preview" [alt]="foto.etiqueta">
+                <div class="foto-acciones">
+                  <label class="foto-btn">
+                    <mat-icon>sync</mat-icon> Cambiar
+                    <input type="file" accept="image/jpeg,image/png,image/webp" (change)="elegirFoto(foto.orden, $event)" hidden>
+                  </label>
+                  <button type="button" class="foto-btn quitar" (click)="quitarFoto(foto.orden)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+                @if (foto.archivo) {
+                  <span class="foto-pendiente">Sin guardar</span>
+                }
+              } @else {
+                <label class="foto-vacia">
+                  <mat-icon>add_a_photo</mat-icon>
+                  <span>Elegir imagen</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" (change)="elegirFoto(foto.orden, $event)" hidden>
+                </label>
+              }
+            </div>
+          }
+        </div>
+        @if (errorFotos) {
+          <p class="foto-error"><mat-icon>error_outline</mat-icon> {{ errorFotos }}</p>
+        }
+      </div>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-stroked-button type="button" class="btn-cancelar" (click)="cancelar()">Cancelar</button>
+      <button mat-flat-button color="primary" class="btn-guardar" type="submit" [disabled]="subiendo()">
+        <mat-icon>{{ esEdicion ? 'save' : 'directions_car' }}</mat-icon>
+        <span>{{ subiendo() ? 'Subiendo fotos...' : (esEdicion ? 'Guardar cambios' : 'Registrar vehículo') }}</span>
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>
