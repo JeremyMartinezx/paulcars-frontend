@@ -1,0 +1,140 @@
+<section class="page">
+  <app-back-button></app-back-button>
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Business Intelligence</p>
+      <h1>Reportes ejecutivos</h1>
+      <p class="description">Ingresos, ocupación de flota, rendimiento operativo y rentabilidad por vehículo.</p>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filtros">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Desde</mat-label>
+      <input matInput type="date" [(ngModel)]="desde">
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Hasta</mat-label>
+      <input matInput type="date" [(ngModel)]="hasta">
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Sede</mat-label>
+      <mat-select [(ngModel)]="sede">
+        @for (s of sedes; track s.valor) {
+          <mat-option [value]="s.valor">{{ s.titulo }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Categoría</mat-label>
+      <mat-select [(ngModel)]="categoria">
+        @for (c of categorias; track c) {
+          <mat-option [value]="c">{{ c === 'TODAS' ? 'Todas' : c }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <div class="filtros-botones">
+      <button mat-flat-button color="primary" type="button" (click)="consultar()">
+        <mat-icon>filter_alt</mat-icon> Aplicar
+      </button>
+      <button mat-stroked-button type="button" (click)="limpiar()">Mes actual</button>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="pc-alert error"><mat-icon>error</mat-icon><span>{{ error() }}</span></div>
+  }
+
+  @if (cargando() && !reporte()) {
+    <p class="vacio">Calculando indicadores...</p>
+  }
+
+  @if (reporte(); as r) {
+    <!-- KPIs principales -->
+    <h2 class="seccion">KPIs principales</h2>
+    <div class="kpi-grid">
+      <article class="kpi">
+        <mat-icon class="k-azul">payments</mat-icon>
+        <span>Ingresos totales del periodo</span>
+        <strong>S/ {{ r.ingresosTotales | number:'1.2-2' }}</strong>
+        <small>{{ r.alquileresEnPeriodo }} contratos iniciados</small>
+      </article>
+      <article class="kpi">
+        <mat-icon class="k-verde">donut_large</mat-icon>
+        <span>Ocupación de flota</span>
+        <strong>{{ r.ocupacionFlota | number:'1.0-1' }}%</strong>
+        <div class="barra-ocupacion"><div [style.width.%]="r.ocupacionFlota"></div></div>
+      </article>
+      <article class="kpi">
+        <mat-icon class="k-ambar">confirmation_number</mat-icon>
+        <span>Ticket promedio por alquiler</span>
+        <strong>S/ {{ r.ticketPromedio | number:'1.2-2' }}</strong>
+        <small>Promedio por contrato</small>
+      </article>
+      <article class="kpi">
+        <mat-icon class="k-azul">event_available</mat-icon>
+        <span>Contratos finalizados</span>
+        <strong>{{ r.alquileresFinalizados }}</strong>
+        <small>Promedio: {{ (r.alquileresEnPeriodo > 0 ? (r.diasTotalesAlquilados / r.alquileresEnPeriodo) : 0) | number:'1.1-1' }} días por alquiler</small>
+      </article>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="graficos">
+      @for (g of graficos(r); track g.titulo) {
+        <section class="grafico">
+          <h3>{{ g.titulo }}</h3>
+          @for (fila of g.filas; track fila.etiqueta) {
+            <div class="barra-fila">
+              <span class="barra-etiqueta">{{ fila.etiqueta }}</span>
+              <div class="barra-pista">
+                <div class="barra" [style.width.%]="anchoBarra(fila, g.filas)"></div>
+              </div>
+              <span class="barra-valor">S/ {{ fila.total | number:'1.0-0' }} <small>({{ fila.cantidad }})</small></span>
+            </div>
+          } @empty {
+            <p class="vacio">Sin pagos en el periodo.</p>
+          }
+        </section>
+      }
+    </div>
+
+    <!-- Top vehículos -->
+    <section class="tabla-card">
+      <h2>Top vehículos más rentables</h2>
+      <div class="tabla-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Vehículo</th><th>Placa</th><th>Categoría</th>
+              <th class="num">Alquileres</th><th class="num">Días</th>
+              <th class="num">Ingresos</th><th>Utilización</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (v of r.topVehiculos; track v.idVehiculo; let i = $index) {
+              <tr>
+                <td>{{ i + 1 }}</td>
+                <td><strong>{{ v.vehiculo }}</strong></td>
+                <td>{{ v.placa }}</td>
+                <td>{{ v.categoria }}</td>
+                <td class="num">{{ v.alquileres }}</td>
+                <td class="num">{{ v.diasAlquilados }}</td>
+                <td class="num">S/ {{ v.ingresos | number:'1.2-2' }}</td>
+                <td>
+                  <div class="util">
+                    <div class="util-pista"><div [style.width.%]="v.utilizacion"></div></div>
+                    <span>{{ v.utilizacion | number:'1.0-0' }}%</span>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="8" class="vacio">No hay vehículos con estos filtros.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</section>
