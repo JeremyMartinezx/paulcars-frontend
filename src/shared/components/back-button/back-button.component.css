@@ -1,0 +1,9 @@
+.back-button {
+  margin-bottom: 18px;
+  color: #667085;
+  border-color: #e4e7ec;
+}
+
+.back-button mat-icon {
+  margin-right: 4px;
+}

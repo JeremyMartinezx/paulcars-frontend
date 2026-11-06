@@ -1,0 +1,51 @@
+<div class="confirm-dialog" [ngClass]="'tipo-' + tipoDetectado()">
+  <div class="dialog-header">
+    <div class="dialog-icon-circle">
+      @if ((data.icono || icono()) === 'car_off' || (data.icono || icono()) === 'no_crash') {
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+          <path d="M15.584 15.588a2 2 0 0 0 2.828 2.83" />
+          <path d="M5 17h-2v-6l2 -5h1m4 0h4l4 5h1a2 2 0 0 1 2 2v4m-6 0h-6m-6 -6h8m4 0h3m-6 -3v-2" />
+          <path d="M3 3l18 18" />
+        </svg>
+      } @else if ((data.icono || icono()) === 'car_on') {
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+          <path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+          <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" />
+        </svg>
+      } @else {
+        <mat-icon>{{ data.icono || icono() }}</mat-icon>
+      }
+    </div>
+    <div class="dialog-header-text">
+      <h2 mat-dialog-title class="dialog-title">{{ data.titulo }}</h2>
+      <span class="dialog-subtitle">
+        {{ data.subtitulo || (tipoDetectado() === 'finalizar' ? 'Entrega de vehículo' : tipoDetectado() === 'cancelar' ? 'Anulación de contrato' : tipoDetectado() === 'eliminar' ? 'Acción irreversible en el sistema' : 'Confirmación requerida') }}
+      </span>
+    </div>
+  </div>
+
+  <mat-dialog-content class="dialog-content">
+    <div class="message-card">
+      <p class="dialog-message">{{ data.mensaje }}</p>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-stroked-button type="button" class="btn-cancelar" (click)="cancelar()">
+      {{ data.textoCancelar || 'Cancelar' }}
+    </button>
+
+    <button
+      mat-flat-button
+      type="button"
+      class="btn-confirmar"
+      [ngClass]="'btn-accion-' + tipoDetectado()"
+      (click)="confirmar()"
+    >
+      <mat-icon>{{ tipoDetectado() === 'finalizar' ? 'check' : tipoDetectado() === 'cancelar' ? 'close' : 'done' }}</mat-icon>
+      <span>{{ data.textoConfirmar || 'Confirmar' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>
