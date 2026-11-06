@@ -1,0 +1,499 @@
+<section class="reserva-page">
+  <div class="reserva-header">
+    <p class="eyebrow">Reserva online</p>
+    <h1>Solicita tu vehículo</h1>
+    @if (esUsuarioAutenticado()) {
+      <p>Revisa los detalles de tu solicitud antes de confirmar.</p>
+    } @else {
+      <p>Completa tus datos para registrar la solicitud de alquiler sin necesidad de iniciar sesión.</p>
+    }
+  </div>
+
+  @if (enviado()) {
+    <div id="mensaje-exito-reserva" class="confirmacion-reserva-wrapper">
+      <div class="confirmacion-card-compacta">
+        <div class="confirmacion-top">
+          <div class="confirmacion-icon-bubble">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+          <div class="confirmacion-info">
+            <div class="confirmacion-badge">SOLICITUD REGISTRADA CON ÉXITO</div>
+            <h2>¡Solicitud aceptada y registrada con éxito!</h2>
+            <p class="confirmacion-detalle-txt">
+              Tu solicitud para <strong>{{ resumen()?.vehiculo }}</strong> del <strong>{{ resumen()?.inicio }}</strong> al <strong>{{ resumen()?.fin }}</strong> por un total de <strong>S/ {{ resumen()?.total | number:'1.2-2' }}</strong> ha sido guardada en el sistema. El asesor de counter se comunicará con usted para confirmar la entrega y requisitos.
+            </p>
+          </div>
+        </div>
+
+        @if (resumen()?.eraPublico) {
+          <div class="acceso-cuenta-box">
+            <div class="acceso-cuenta-header">
+              <mat-icon>account_circle</mat-icon>
+              <span>Acceso a tu cuenta</span>
+            </div>
+            <p class="acceso-cuenta-desc">
+              Para dar seguimiento a tu reserva y consultar tu comprobante oficial, inicia sesión con tu <strong>correo electrónico</strong> (<span class="correo-destacado">{{ resumen()?.email }}</span>) y tu <strong>número de DNI</strong> como contraseña inicial (podrás cambiarla en tu perfil).
+            </p>
+          </div>
+        }
+
+        <div class="confirmacion-actions">
+          @if (esUsuarioAutenticado()) {
+            <a mat-flat-button class="btn-ver-estado-reserva" routerLink="/cliente/reservas">
+              <mat-icon>assignment</mat-icon>
+              <span>Ver mis reservas</span>
+            </a>
+          } @else if (resumen()?.eraPublico) {
+            <a mat-flat-button class="btn-ir-login" [routerLink]="['/login']" [queryParams]="{ email: resumen()?.email }">
+              <mat-icon>login</mat-icon>
+              <span>Iniciar sesión</span>
+            </a>
+          }
+          <a mat-stroked-button class="btn-seguir-explorando" routerLink="/catalogo">
+            <mat-icon>directions_car</mat-icon>
+            <span>Explorar más vehículos</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (errorMensaje()) {
+    <div class="error-banner" style="background: #FEE2E2; border: 1px solid #EF4444; color: #991B1B; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-size: 14px;">
+      <mat-icon style="color: #DC2626;">error</mat-icon>
+      <span>{{ errorMensaje() }}</span>
+    </div>
+  }
+
+  <!-- Mensaje discreto superior cuando el cliente tiene documentación pendiente -->
+  @if (esUsuarioAutenticado() && !datosClienteCompletos()) {
+    <div class="aviso-perfil-discreto">
+      <div class="aviso-perfil-contenido">
+        <mat-icon class="aviso-perfil-icon">info</mat-icon>
+        <div class="aviso-perfil-texto">
+          <strong>Perfil pendiente de completar:</strong>
+          <span>Registra tu DNI, licencia de conducir y dirección para poder reservar.</span>
+        </div>
+      </div>
+      <a mat-button class="btn-aviso-perfil" routerLink="/cliente/perfil">
+        <span>Actualizar en Mi Perfil</span>
+        <mat-icon>arrow_forward</mat-icon>
+      </a>
+    </div>
+  }
+
+  <form class="reserva-form" #reservaForm="ngForm" (ngSubmit)="registrar(reservaForm)">
+    <section class="form-section">
+      <h2>Vehículo y fechas</h2>
+
+      <label>
+        Vehículo
+        <select name="vehiculoId" [ngModel]="vehiculoId()" (ngModelChange)="onVehiculoChange($event)" required>
+          <option [ngValue]="0" disabled>Selecciona un vehículo</option>
+          @for (vehiculo of vehiculosDisponibles(); track vehiculo.idVehiculo) {
+            <option [ngValue]="vehiculo.idVehiculo" [disabled]="(vehiculo.unidadesDisponibles ?? 0) === 0">
+              {{ vehiculo.modelo?.marca?.nombreMarca || vehiculo.marca?.nombreMarca }} {{ vehiculo.modelo?.modelo || vehiculo.nombreModelo }} - S/ {{ vehiculo.precioDia }} por día
+            </option>
+          }
+        </select>
+      </label>
+
+      @if (vehiculoSeleccionado(); as veh) {
+        <div class="vehiculo-preview-card">
+          <div class="veh-prev-thumb">
+            <img [src]="obtenerImagenVehiculo(veh)" [alt]="veh.modelo?.modelo || veh.nombreModelo" (error)="$any($event.target).src = '/images/vehiculos/corolla.jpg'" />
+          </div>
+          <div class="veh-prev-details">
+            <div class="veh-prev-top">
+              <h3>{{ veh.modelo?.marca?.nombreMarca || veh.marca?.nombreMarca }} {{ veh.modelo?.modelo || veh.nombreModelo }}</h3>
+              <span class="veh-prev-price">S/ {{ veh.precioDia }} <small>/ día</small></span>
+            </div>
+            <div class="veh-prev-specs">
+              <span class="veh-spec-pill"><mat-icon>category</mat-icon> {{ veh.tipo?.nombreTipo || veh.tipoCarroceria }}</span>
+              <span class="veh-spec-pill"><mat-icon>calendar_today</mat-icon> {{ veh.anio }}</span>
+              <span class="veh-spec-pill"><mat-icon>local_gas_station</mat-icon> {{ veh.combustible?.nombreCombustible || veh.combustible || 'Gasolina' }}</span>
+            </div>
+          </div>
+        </div>
+
+        @if ((veh.unidadesDisponibles ?? 0) === 0) {
+          <div class="alerta-sin-stock">
+            <mat-icon>warning</mat-icon>
+            <div>
+              <strong>Sin unidades disponibles:</strong>
+              <span>Todas las unidades de este modelo están reservadas o en alquiler. Por favor selecciona otro vehículo del catálogo.</span>
+            </div>
+          </div>
+        }
+      }
+
+      <div class="form-grid">
+        <label>
+          Oficina de entrega
+          <select name="sedeRecojo" [ngModel]="sedeRecojo()" (ngModelChange)="onSedeRecojoChange($event)" required>
+            @for (s of sedes; track s.id) {
+              <option [value]="s.id">{{ s.nombre }}</option>
+            }
+          </select>
+          <small style="color: #64748B; font-size: 11px; margin-top: 2px;">
+            {{ sedeRecojo() === 'AEROPUERTO' ? 'Atención las 24 horas' : 'Lun-Vie 08:30-18:00, Sáb 09:00-17:00' }}
+          </small>
+        </label>
+
+        <label>
+          Oficina de devolución
+          <select name="sedeDevolucion" [ngModel]="sedeDevolucion()" (ngModelChange)="onSedeDevolucionChange($event)" required>
+            @for (s of sedes; track s.id) {
+              <option [value]="s.id">{{ s.nombre }}</option>
+            }
+          </select>
+          <small style="color: #64748B; font-size: 11px; margin-top: 2px;">
+            {{ sedeDevolucion() === 'AEROPUERTO' ? 'Atención las 24 horas' : 'Lun-Vie 08:30-18:00, Sáb 09:00-17:00' }}
+          </small>
+        </label>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Fecha y Hora de inicio
+          <div class="datetime-inputs">
+            <div class="custom-date-box" (click)="pickerInicio.open()">
+              <input
+                type="text"
+                id="fechaInicio"
+                [matDatepicker]="pickerInicio"
+                [matDatepickerFilter]="filtroFechasInicio"
+                [min]="minFechaInicioDate()"
+                [value]="fechaInicioDate()"
+                (dateChange)="onFechaInicioMatChange($event)"
+                class="form-input date-input custom-date-picker-input"
+                readonly
+                placeholder="DD/MM/AAAA"
+              />
+              <button
+                type="button"
+                class="btn-picker-icon"
+                (click)="$event.stopPropagation(); pickerInicio.open()"
+                aria-label="Abrir calendario"
+              >
+                <mat-icon>calendar_month</mat-icon>
+              </button>
+              <mat-datepicker #pickerInicio panelClass="paulcars-calendar-panel" yPosition="below"></mat-datepicker>
+            </div>
+
+            <div class="custom-dropdown time-dropdown-box" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                id="btn-hora-inicio"
+                class="custom-dropdown-trigger time-trigger"
+                [class.is-open]="dropdownAbierto() === 'inicioHora'"
+                [class.no-turns]="horasRecojo().length === 0"
+                (click)="toggleDropdown('inicioHora', $event)"
+                aria-label="Hora de inicio"
+              >
+                <span class="dropdown-selected-value time-val" [class.text-muted]="horasRecojo().length === 0">
+                  @if (horasRecojo().length === 0) {
+                    {{ esDomingo(fechaInicio()) && sedeRecojo() === 'MIRAFLORES' ? 'Cerrado' : 'Sin turnos' }}
+                  } @else {
+                    {{ horaInicio() }}
+                  }
+                </span>
+                <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'inicioHora' ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
+
+              @if (dropdownAbierto() === 'inicioHora') {
+                <ul class="custom-dropdown-menu time-menu" role="listbox">
+                  @if (horasRecojo().length === 0) {
+                    <li class="dropdown-empty-item">
+                      <mat-icon class="icon-empty">event_busy</mat-icon>
+                      <div class="empty-info">
+                        @if (esDomingo(fechaInicio()) && sedeRecojo() === 'MIRAFLORES') {
+                          <strong>Sede Miraflores cerrada</strong>
+                          <small>No hay atención los domingos</small>
+                        } @else if (fechaInicio() === hoyStr) {
+                          <strong>Sin turnos hoy</strong>
+                          <small>Los turnos de hoy ya concluyeron</small>
+                        } @else {
+                          <strong>No disponible</strong>
+                          <small>No hay turnos para esta fecha</small>
+                        }
+                      </div>
+                    </li>
+                  } @else {
+                    @for (h of horasRecojo(); track h) {
+                      <li
+                        class="custom-dropdown-item time-item"
+                        role="option"
+                        [class.selected]="horaInicio() === h"
+                        (click)="seleccionarHoraInicio(h, $event)"
+                      >
+                        {{ h }}
+                      </li>
+                    }
+                  }
+                </ul>
+              }
+            </div>
+          </div>
+        </label>
+        <label>
+          Fecha y Hora de devolución
+          <div class="datetime-inputs">
+            <div class="custom-date-box" (click)="pickerFin.open()">
+              <input
+                type="text"
+                id="fechaFin"
+                [matDatepicker]="pickerFin"
+                [matDatepickerFilter]="filtroFechasFin"
+                [min]="minFechaFinDate()"
+                [value]="fechaFinDate()"
+                (dateChange)="onFechaFinMatChange($event)"
+                class="form-input date-input custom-date-picker-input"
+                readonly
+                placeholder="DD/MM/AAAA"
+              />
+              <button
+                type="button"
+                class="btn-picker-icon"
+                (click)="$event.stopPropagation(); pickerFin.open()"
+                aria-label="Abrir calendario"
+              >
+                <mat-icon>calendar_month</mat-icon>
+              </button>
+              <mat-datepicker #pickerFin panelClass="paulcars-calendar-panel" yPosition="below"></mat-datepicker>
+            </div>
+
+            <div class="custom-dropdown time-dropdown-box" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                id="btn-hora-fin"
+                class="custom-dropdown-trigger time-trigger"
+                [class.is-open]="dropdownAbierto() === 'finHora'"
+                [class.no-turns]="horasDevolucion().length === 0"
+                (click)="toggleDropdown('finHora', $event)"
+                aria-label="Hora de devolución"
+              >
+                <span class="dropdown-selected-value time-val" [class.text-muted]="horasDevolucion().length === 0">
+                  @if (horasDevolucion().length === 0) {
+                    {{ esDomingo(fechaFin()) && sedeDevolucion() === 'MIRAFLORES' ? 'Cerrado' : 'Sin turnos' }}
+                  } @else {
+                    {{ horaFin() }}
+                  }
+                </span>
+                <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'finHora' ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
+
+              @if (dropdownAbierto() === 'finHora') {
+                <ul class="custom-dropdown-menu time-menu" role="listbox">
+                  @if (horasDevolucion().length === 0) {
+                    <li class="dropdown-empty-item">
+                      <mat-icon class="icon-empty">event_busy</mat-icon>
+                      <div class="empty-info">
+                        @if (esDomingo(fechaFin()) && sedeDevolucion() === 'MIRAFLORES') {
+                          <strong>Sede Miraflores cerrada</strong>
+                          <small>No hay atención los domingos</small>
+                        } @else {
+                          <strong>No disponible</strong>
+                          <small>No hay turnos para esta fecha</small>
+                        }
+                      </div>
+                    </li>
+                  } @else {
+                    @for (h of horasDevolucion(); track h) {
+                      <li
+                        class="custom-dropdown-item time-item"
+                        role="option"
+                        [class.selected]="horaFin() === h"
+                        (click)="seleccionarHoraFin(h, $event)"
+                      >
+                        {{ h }}
+                      </li>
+                    }
+                  }
+                </ul>
+              }
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <div class="extras-section">
+        <span class="extras-title">Servicios adicionales:</span>
+
+        <label class="extra-checkbox-row">
+          <input
+            type="checkbox"
+            name="extraSeguro"
+            [ngModel]="extraSeguro()"
+            (ngModelChange)="extraSeguro.set($event)"
+          />
+          <div class="extra-desc">
+            <div class="extra-label-info">
+              <strong>Seguro Todo Riesgo</strong>
+              <small>Cero deducible ante daños, colisiones y siniestros</small>
+            </div>
+            <span class="extra-price">+ S/ {{ TARIFA_SEGURO_DIA | number:'1.2-2' }} / día</span>
+          </div>
+        </label>
+
+        <label class="extra-checkbox-row">
+          <input
+            type="checkbox"
+            name="extraConductor"
+            [ngModel]="extraConductor()"
+            (ngModelChange)="extraConductor.set($event)"
+          />
+          <div class="extra-desc">
+            <div class="extra-label-info">
+              <strong>Conductor Adicional Autorizado</strong>
+              <small>Habilita a un segundo conductor en el contrato</small>
+            </div>
+            <span class="extra-price">+ S/ {{ TARIFA_CONDUCTOR_DIA | number:'1.2-2' }} / día</span>
+          </div>
+        </label>
+
+        <label class="extra-checkbox-row">
+          <input
+            type="checkbox"
+            name="extraSilla"
+            [ngModel]="extraSilla()"
+            (ngModelChange)="extraSilla.set($event)"
+          />
+          <div class="extra-desc">
+            <div class="extra-label-info">
+              <strong>Silla de Seguridad para Bebé / Niño</strong>
+              <small>Certificada ISOFIX para máxima protección</small>
+            </div>
+            <span class="extra-price">+ S/ {{ TARIFA_SILLA_DIA | number:'1.2-2' }} / día</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="total-box">
+        <div>
+          <span>Total estimado</span>
+          <small style="display: block; font-size: 13px; color: #64748B; margin-top: 2px;">
+            @if (vehiculoSeleccionado() && diasCalculados() > 0) {
+              {{ diasCalculados() }} {{ diasCalculados() === 1 ? 'día' : 'días' }} ({{ periodoCalculado().horasTotales }}h) x S/ {{ vehiculoSeleccionado()?.precioDia }}/día
+              @if (extraSeguro()) { &bull; Seguro: +S/ {{ costoSeguroTotal() | number:'1.2-2' }} }
+              @if (extraConductor()) { &bull; Conductor: +S/ {{ costoConductorTotal() | number:'1.2-2' }} }
+              @if (extraSilla()) { &bull; Silla: +S/ {{ costoSillaTotal() | number:'1.2-2' }} }
+            } @else if (fechaFin() && fechaInicio() && fechaFin() < fechaInicio()) {
+              <span style="color: #DC2626;">La devolución debe ser igual o posterior al inicio</span>
+            } @else {
+              Selecciona vehículo y rango de fechas
+            }
+          </small>
+        </div>
+        <strong>S/ {{ totalEstimado() | number:'1.2-2' }}</strong>
+      </div>
+    </section>
+
+    @if (!esUsuarioAutenticado()) {
+      <section class="form-section">
+        <h2>Datos del cliente</h2>
+
+        <div class="form-grid">
+          <label>
+            Nombres
+            <input type="text" name="nombres" [(ngModel)]="reserva.nombres" required placeholder="Ej: Juan">
+          </label>
+
+          <label>
+            Apellidos
+            <input type="text" name="apellidos" [(ngModel)]="reserva.apellidos" required placeholder="Ej: Pérez">
+          </label>
+
+          <label>
+            DNI
+            <input
+              type="text"
+              name="dni"
+              [(ngModel)]="reserva.dni"
+              #dniCtrl="ngModel"
+              required
+              maxlength="8"
+              inputmode="numeric"
+              (input)="onDniInput($event)"
+              pattern="^[0-9]{8}$"
+              placeholder="Ej: 71234567"
+            >
+            @if (dniCtrl.invalid && (dniCtrl.touched || dniCtrl.dirty)) {
+              <span class="field-error">El DNI debe tener exactamente 8 números.</span>
+            }
+          </label>
+
+          <label>
+            Teléfono
+            <input
+              type="tel"
+              name="telefono"
+              [(ngModel)]="reserva.telefono"
+              #telCtrl="ngModel"
+              required
+              maxlength="9"
+              inputmode="numeric"
+              (input)="onTelefonoInput($event)"
+              pattern="^9[0-9]{8}$"
+              placeholder="Ej: 987654321"
+            >
+            @if (telCtrl.invalid && (telCtrl.touched || telCtrl.dirty)) {
+              <span class="field-error">Debe iniciar con 9 y tener 9 dígitos.</span>
+            }
+          </label>
+
+          <label>
+            Correo electrónico
+            <input
+              type="email"
+              name="email"
+              [(ngModel)]="reserva.email"
+              #emailCtrl="ngModel"
+              required
+              pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+              placeholder="Ej: juan@gmail.com"
+            >
+            @if (emailCtrl.invalid && (emailCtrl.touched || emailCtrl.dirty)) {
+              <span class="field-error">Ingresa un correo electrónico válido.</span>
+            }
+          </label>
+
+          <label>
+            Licencia de conducir
+            <input
+              type="text"
+              name="licencia"
+              [(ngModel)]="reserva.licencia"
+              #licenciaCtrl="ngModel"
+              maxlength="9"
+              required
+              style="text-transform: uppercase;"
+              (input)="onLicenciaInput($event)"
+              pattern="^[a-zA-Z][0-9]{8}$"
+              placeholder="Ej: Q71234567"
+            >
+            @if (licenciaCtrl.hasError('required') && licenciaCtrl.touched) {
+              <span class="field-error">La licencia de conducir es obligatoria.</span>
+            }
+            @if (licenciaCtrl.hasError('pattern') && licenciaCtrl.touched) {
+              <span class="field-error">Número de licencia no válido.</span>
+            }
+          </label>
+
+          <label style="grid-column: 1 / -1;">
+            Dirección
+            <input type="text" name="direccion" [(ngModel)]="reserva.direccion" required placeholder="Ej: Av. Javier Prado 123">
+          </label>
+        </div>
+      </section>
+    }
+
+    <div class="form-actions">
+      <a mat-stroked-button routerLink="/catalogo">Volver al catálogo</a>
+      <button mat-flat-button color="primary" type="submit" [disabled]="cargando() || (esUsuarioAutenticado() && !datosClienteCompletos()) || sinStockSeleccionado()">
+        <mat-icon>send</mat-icon>
+        {{ cargando() ? 'Registrando reserva...' : (sinStockSeleccionado() ? 'Sin unidades disponibles' : (esUsuarioAutenticado() && !datosClienteCompletos() ? 'Completa tus datos en Mi Perfil' : 'Enviar solicitud')) }}
+      </button>
+    </div>
+  </form>
+</section>
