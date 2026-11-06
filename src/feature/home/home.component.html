@@ -1,0 +1,336 @@
+<section class="home-page">
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-copy">
+        <p class="eyebrow">Paul Car's &bull; Renta de Vehículos en Lima</p>
+        <h1>Alquila el vehículo perfecto para tu próximo viaje</h1>
+        <p class="description">
+          Autos modernos para viajes, trabajo y rutas urbanas con atención rápida,
+          precios transparentes y entregas en Sede Miraflores y Aeropuerto Internacional Jorge Chávez.
+        </p>
+      </div>
+
+      <div class="search-widget-container" id="widget-reservas-hero">
+        <div class="widget-tabs">
+          <div class="widget-tab active">
+            <mat-icon class="tab-icon">directions_car</mat-icon>
+            <span>Reserva de Vehículo</span>
+          </div>
+        </div>
+
+        <form class="widget-search-bar" (ngSubmit)="buscarVehiculos()" novalidate>
+          <div class="field-group field-oficina" [class.is-dropdown-open]="dropdownAbierto() === 'recojoSede'">
+            <label (click)="toggleDropdown('recojoSede', $event)">
+              <mat-icon class="field-icon">storefront</mat-icon>
+              <span>OFICINA DE RECOJO</span>
+            </label>
+            <div class="custom-dropdown" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                id="btn-sede-recojo"
+                class="custom-dropdown-trigger"
+                [class.is-open]="dropdownAbierto() === 'recojoSede'"
+                (click)="toggleDropdown('recojoSede', $event)"
+                aria-haspopup="listbox"
+                [attr.aria-expanded]="dropdownAbierto() === 'recojoSede'"
+              >
+                <span class="dropdown-selected-value">
+                  {{ sedeRecojo() === 'MIRAFLORES' ? 'Miraflores - Av. 28 de Julio 489' : 'Aeropuerto Internacional Jorge Chávez' }}
+                </span>
+                <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'recojoSede' ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
+
+              @if (dropdownAbierto() === 'recojoSede') {
+                <ul class="custom-dropdown-menu branch-menu" role="listbox">
+                  <li
+                    class="custom-dropdown-item"
+                    role="option"
+                    [class.selected]="sedeRecojo() === 'MIRAFLORES'"
+                    (click)="seleccionarSedeRecojo('MIRAFLORES', $event)"
+                  >
+                    <span class="item-name">Miraflores - Av. 28 de Julio 489</span>
+                    <span class="item-schedule">(Lun-Vie: 8:30-18:00 Sáb: 9:00-17:00)</span>
+                  </li>
+                  <li
+                    class="custom-dropdown-item"
+                    role="option"
+                    [class.selected]="sedeRecojo() === 'AEROPUERTO'"
+                    (click)="seleccionarSedeRecojo('AEROPUERTO', $event)"
+                  >
+                    <span class="item-name">Aeropuerto Internacional Jorge Chávez</span>
+                    <span class="item-schedule">(Atención 24 horas)</span>
+                  </li>
+                </ul>
+              }
+            </div>
+          </div>
+
+          <div class="field-group field-oficina" [class.is-dropdown-open]="dropdownAbierto() === 'devolucionSede'">
+            <label (click)="toggleDropdown('devolucionSede', $event)">
+              <mat-icon class="field-icon">replay</mat-icon>
+              <span>OFICINA DE DEVOLUCIÓN</span>
+            </label>
+            <div class="custom-dropdown" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                id="btn-sede-devolucion"
+                class="custom-dropdown-trigger"
+                [class.is-open]="dropdownAbierto() === 'devolucionSede'"
+                (click)="toggleDropdown('devolucionSede', $event)"
+                aria-haspopup="listbox"
+                [attr.aria-expanded]="dropdownAbierto() === 'devolucionSede'"
+              >
+                <span class="dropdown-selected-value">
+                  {{ sedeDevolucion() === 'MIRAFLORES' ? 'Miraflores - Av. 28 de Julio 489' : 'Aeropuerto Internacional Jorge Chávez' }}
+                </span>
+                <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'devolucionSede' ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
+
+              @if (dropdownAbierto() === 'devolucionSede') {
+                <ul class="custom-dropdown-menu branch-menu" role="listbox">
+                  <li
+                    class="custom-dropdown-item"
+                    role="option"
+                    [class.selected]="sedeDevolucion() === 'MIRAFLORES'"
+                    (click)="seleccionarSedeDevolucion('MIRAFLORES', $event)"
+                  >
+                    <span class="item-name">Miraflores - Av. 28 de Julio 489</span>
+                    <span class="item-schedule">(Lun-Vie: 8:30-18:00 Sáb: 9:00-17:00)</span>
+                  </li>
+                  <li
+                    class="custom-dropdown-item"
+                    role="option"
+                    [class.selected]="sedeDevolucion() === 'AEROPUERTO'"
+                    (click)="seleccionarSedeDevolucion('AEROPUERTO', $event)"
+                  >
+                    <span class="item-name">Aeropuerto Internacional Jorge Chávez</span>
+                    <span class="item-schedule">(Atención 24 horas)</span>
+                  </li>
+                </ul>
+              }
+            </div>
+          </div>
+
+          <div class="field-group field-datetime" [class.is-dropdown-open]="dropdownAbierto() === 'recojoHora'">
+            <label (click)="pickerRecojo.open()">
+              <mat-icon class="field-icon">event</mat-icon>
+              <span>FECHA Y HORA RECOJO</span>
+            </label>
+            <div class="datetime-inputs">
+              <div class="custom-date-box" (click)="pickerRecojo.open()">
+                <input
+                  type="text"
+                  id="fechaRecojo"
+                  [matDatepicker]="pickerRecojo"
+                  [matDatepickerFilter]="filtroFechasRecojo"
+                  [min]="minFechaRecojoDate()"
+                  [value]="fechaRecojoDate()"
+                  (dateChange)="onFechaRecojoMatChange($event)"
+                  class="form-input date-input custom-date-picker-input"
+                  readonly
+                  placeholder="DD/MM/AAAA"
+                />
+                <button
+                  type="button"
+                  class="btn-picker-icon"
+                  (click)="$event.stopPropagation(); pickerRecojo.open()"
+                  aria-label="Abrir calendario"
+                >
+                  <mat-icon>calendar_month</mat-icon>
+                </button>
+                <mat-datepicker #pickerRecojo panelClass="paulcars-calendar-panel" yPosition="below"></mat-datepicker>
+              </div>
+              <div class="custom-dropdown time-dropdown-box" (click)="$event.stopPropagation()">
+                <button
+                  type="button"
+                  id="btn-hora-recojo"
+                  class="custom-dropdown-trigger time-trigger"
+                  [class.is-open]="dropdownAbierto() === 'recojoHora'"
+                  [class.no-turns]="horasRecojo().length === 0"
+                  (click)="toggleDropdown('recojoHora', $event)"
+                  aria-label="Hora de recogida"
+                >
+                  <span class="dropdown-selected-value time-val" [class.text-muted]="horasRecojo().length === 0">
+                    @if (horasRecojo().length === 0) {
+                      {{ esDomingo(fechaRecojo()) && sedeRecojo() === 'MIRAFLORES' ? 'Cerrado' : 'Sin turnos' }}
+                    } @else {
+                      {{ horaRecojo() }}
+                    }
+                  </span>
+                  <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'recojoHora' ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
+
+                @if (dropdownAbierto() === 'recojoHora') {
+                  <ul class="custom-dropdown-menu time-menu" role="listbox">
+                    @if (horasRecojo().length === 0) {
+                      <li class="dropdown-empty-item">
+                        <mat-icon class="icon-empty">event_busy</mat-icon>
+                        <div class="empty-info">
+                          @if (esDomingo(fechaRecojo()) && sedeRecojo() === 'MIRAFLORES') {
+                            <strong>Sede Miraflores cerrada</strong>
+                            <small>No hay atención los domingos</small>
+                          } @else if (fechaRecojo() === hoyStr) {
+                            <strong>Sin turnos hoy</strong>
+                            <small>Los turnos de hoy ya concluyeron</small>
+                          } @else {
+                            <strong>No disponible</strong>
+                            <small>No hay turnos para esta fecha</small>
+                          }
+                        </div>
+                      </li>
+                    } @else {
+                      @for (h of horasRecojo(); track h) {
+                        <li
+                          class="custom-dropdown-item time-item"
+                          role="option"
+                          [class.selected]="horaRecojo() === h"
+                          (click)="seleccionarHoraRecojo(h, $event)"
+                        >
+                          {{ h }}
+                        </li>
+                      }
+                    }
+                  </ul>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group field-datetime" [class.is-dropdown-open]="dropdownAbierto() === 'devolucionHora'">
+            <label (click)="pickerDevolucion.open()">
+              <mat-icon class="field-icon">event_available</mat-icon>
+              <span>FECHA Y HORA DEVOLUCIÓN</span>
+            </label>
+            <div class="datetime-inputs">
+              <div class="custom-date-box" (click)="pickerDevolucion.open()">
+                <input
+                  type="text"
+                  id="fechaDevolucion"
+                  [matDatepicker]="pickerDevolucion"
+                  [matDatepickerFilter]="filtroFechasDevolucion"
+                  [min]="minFechaDevolucionDate()"
+                  [value]="fechaDevolucionDate()"
+                  (dateChange)="onFechaDevolucionMatChange($event)"
+                  class="form-input date-input custom-date-picker-input"
+                  readonly
+                  placeholder="DD/MM/AAAA"
+                />
+                <button
+                  type="button"
+                  class="btn-picker-icon"
+                  (click)="$event.stopPropagation(); pickerDevolucion.open()"
+                  aria-label="Abrir calendario"
+                >
+                  <mat-icon>calendar_month</mat-icon>
+                </button>
+                <mat-datepicker #pickerDevolucion panelClass="paulcars-calendar-panel" yPosition="below"></mat-datepicker>
+              </div>
+              <div class="custom-dropdown time-dropdown-box" (click)="$event.stopPropagation()">
+                <button
+                  type="button"
+                  id="btn-hora-devolucion"
+                  class="custom-dropdown-trigger time-trigger"
+                  [class.is-open]="dropdownAbierto() === 'devolucionHora'"
+                  [class.no-turns]="horasDevolucion().length === 0"
+                  (click)="toggleDropdown('devolucionHora', $event)"
+                  aria-label="Hora de devolución"
+                >
+                  <span class="dropdown-selected-value time-val" [class.text-muted]="horasDevolucion().length === 0">
+                    @if (horasDevolucion().length === 0) {
+                      {{ esDomingo(fechaDevolucion()) && sedeDevolucion() === 'MIRAFLORES' ? 'Cerrado' : 'Sin turnos' }}
+                    } @else {
+                      {{ horaDevolucion() }}
+                    }
+                  </span>
+                  <mat-icon class="dropdown-chevron">{{ dropdownAbierto() === 'devolucionHora' ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
+
+                @if (dropdownAbierto() === 'devolucionHora') {
+                  <ul class="custom-dropdown-menu time-menu" role="listbox">
+                    @if (horasDevolucion().length === 0) {
+                      <li class="dropdown-empty-item">
+                        <mat-icon class="icon-empty">event_busy</mat-icon>
+                        <div class="empty-info">
+                          @if (esDomingo(fechaDevolucion()) && sedeDevolucion() === 'MIRAFLORES') {
+                            <strong>Sede Miraflores cerrada</strong>
+                            <small>No hay atención los domingos</small>
+                          } @else if (fechaDevolucion() === hoyStr) {
+                            <strong>Sin turnos hoy</strong>
+                            <small>Los turnos de hoy ya concluyeron</small>
+                          } @else {
+                            <strong>No disponible</strong>
+                            <small>No hay turnos para esta fecha</small>
+                          }
+                        </div>
+                      </li>
+                    } @else {
+                      @for (h of horasDevolucion(); track h) {
+                        <li
+                          class="custom-dropdown-item time-item"
+                          role="option"
+                          [class.selected]="horaDevolucion() === h"
+                          (click)="seleccionarHoraDevolucion(h, $event)"
+                        >
+                          {{ h }}
+                        </li>
+                      }
+                    }
+                  </ul>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group field-submit">
+            <button
+              type="submit"
+              mat-flat-button
+              class="btn-buscar-paulcars"
+              id="btn-buscar-vehiculos-hero"
+            >
+              <mat-icon>search</mat-icon>
+              <span>Buscar vehículos</span>
+            </button>
+          </div>
+        </form>
+
+        @if (errorValidacion()) {
+          <div class="widget-alerta-error" role="alert">
+            <mat-icon>error_outline</mat-icon>
+            <div class="alerta-texto">
+              <strong>Atención con el horario:</strong> {{ errorValidacion() }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="quick-info" aria-label="Beneficios">
+    <article>
+      <mat-icon>garage</mat-icon>
+      <strong>Flota moderna</strong>
+      <span>Vehículos listos para ciudad, carretera y trabajo.</span>
+    </article>
+
+    <article>
+      <mat-icon>schedule</mat-icon>
+      <strong>Sedes estratégicas</strong>
+      <span>Recoge en Miraflores en horario comercial o en Aeropuerto Internacional Jorge Chávez 24/7.</span>
+    </article>
+
+    <article>
+      <mat-icon>support_agent</mat-icon>
+      <strong>Atención cercana</strong>
+      <span>Soporte para elegir el auto adecuado según tu ruta con tarifas claras.</span>
+    </article>
+  </section>
+
+  <section class="cta">
+    <div>
+      <h2>¿Listo para reservar?</h2>
+      <p>Revisa la flota disponible en tu sede de preferencia y solicita el vehículo que necesitas.</p>
+    </div>
+    <a mat-flat-button class="btn-cta-catalogo" routerLink="/catalogo">Ver catálogo completo</a>
+  </section>
+</section>
