@@ -1,0 +1,110 @@
+<div class="usuario-dialog">
+  <div class="dialog-header">
+    <div class="dialog-icon-circle">
+      <mat-icon>person</mat-icon>
+    </div>
+    <div class="dialog-header-text">
+      <h2 mat-dialog-title class="dialog-title">{{ esEdicion ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+      <span class="dialog-subtitle">Credenciales y permisos de acceso al sistema</span>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="usuario-form" autocomplete="off">
+    <mat-dialog-content class="modal-content">
+      
+      <!-- Fila 1: Nombres y Apellidos -->
+      <div class="form-row-2">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Nombres</mat-label>
+          <input
+            matInput
+            formControlName="nombres"
+            placeholder="Ej: Alexander"
+            (input)="onNombreApellidoChange()"
+            autocomplete="off"
+            name="pc_user_nombres"
+          >
+          @if (form.controls.nombres.hasError('required') && form.controls.nombres.touched) {
+            <mat-error>Los nombres son obligatorios.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Apellidos</mat-label>
+          <input
+            matInput
+            formControlName="apellidos"
+            placeholder="Ej: Muñoz Ramos"
+            (input)="onNombreApellidoChange()"
+            autocomplete="off"
+            name="pc_user_apellidos"
+          >
+          @if (form.controls.apellidos.hasError('required') && form.controls.apellidos.touched) {
+            <mat-error>Los apellidos son obligatorios.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <!-- Fila 2: DNI y Rol -->
+      <div class="form-row-2">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>DNI</mat-label>
+          <input
+            matInput
+            formControlName="dni"
+            placeholder="8 dígitos"
+            maxlength="8"
+            inputmode="numeric"
+            autocomplete="off"
+            name="pc_user_dni"
+          >
+          @if (form.controls.dni.hasError('required') && form.controls.dni.touched) {
+            <mat-error>El DNI es obligatorio.</mat-error>
+          }
+          @if (form.controls.dni.hasError('pattern') && form.controls.dni.touched) {
+            <mat-error>Debe contener exactamente 8 dígitos numéricos.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Rol</mat-label>
+          <mat-select formControlName="rolNombre">
+            @for (rol of roles; track rol.idRol) {
+              <mat-option [value]="rol.nombreRol">
+                {{ rol.nombreRol === 'ADMIN' ? 'Administrador' : (rol.nombreRol === 'EMPLEADO' ? 'Asesor de Ventas' : rol.nombreRol) }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Fila 3: Correo corporativo autogenerado -->
+      <mat-form-field appearance="outline" class="full" subscriptSizing="dynamic">
+        <mat-label>Correo corporativo</mat-label>
+        <mat-icon matPrefix class="field-icon">email</mat-icon>
+        <input
+          matInput
+          formControlName="username"
+          placeholder="nombre.apellido@paulcars.com"
+          autocomplete="off"
+          name="pc_user_email_corp"
+        >
+        @if (form.controls.username.hasError('required') && form.controls.username.touched) {
+          <mat-error>El correo corporativo es obligatorio.</mat-error>
+        }
+        @if (form.controls.username.hasError('emailCorporativo') && form.controls.username.touched) {
+          <mat-error>Debe terminar obligatoriamente con &#64;paulcars.com</mat-error>
+        }
+      </mat-form-field>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-stroked-button type="button" class="btn-cancelar" (click)="cancelar()">Cancelar</button>
+      <button mat-flat-button color="primary" class="btn-guardar" type="submit">
+        <mat-icon>{{ esEdicion ? 'save' : 'person_add' }}</mat-icon>
+        <span>{{ esEdicion ? 'Guardar cambios' : 'Crear usuario' }}</span>
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>
