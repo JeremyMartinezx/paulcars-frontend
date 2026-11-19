@@ -1,0 +1,79 @@
+<header class="cr-cabecera">
+  <div class="cr-icono"><mat-icon>event_busy</mat-icon></div>
+  <div class="cr-titulo">
+    <h2 mat-dialog-title>Cancelar reserva</h2>
+    <span>{{ codigo }} &bull; {{ vehiculoNombre }} &bull; {{ clienteNombre }}</span>
+  </div>
+  <button mat-icon-button type="button" class="cr-cerrar" (click)="cerrar()" aria-label="Cerrar">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<mat-dialog-content class="cr-cuerpo">
+  @if (cargando()) {
+    <p class="cr-nota">Calculando...</p>
+  }
+
+  @if (previa(); as p) {
+    <!-- Plazo de pago (reserva sin pagos) -->
+    @if (!p.tienePagos && p.venceElPago) {
+      <div class="cr-aviso">
+        <mat-icon>{{ p.pagoVencido ? 'alarm_off' : 'schedule' }}</mat-icon>
+        <span>
+          @if (p.pagoVencido) {
+            El plazo para pagar venció el <strong>{{ fechaHoraLarga(p.venceElPago) }}</strong>. Puedes cancelarla.
+          } @else {
+            El cliente tiene hasta el <strong>{{ fechaHoraLarga(p.venceElPago) }}</strong> para pagar.
+          }
+        </span>
+      </div>
+    }
+
+    <h3 class="cr-sub">Motivo</h3>
+    <div class="cr-motivos">
+      @for (m of motivosVisibles(); track m.valor) {
+        <label class="cr-motivo" [class.marcado]="motivo() === m.valor">
+          <input type="radio" name="motivo" [checked]="motivo() === m.valor" (change)="elegirMotivo(m.valor)" />
+          <span>
+            <strong>{{ m.titulo }}</strong>
+            <small>{{ m.ayuda }}</small>
+          </span>
+        </label>
+      }
+    </div>
+
+    <!-- Devolución -->
+    @if (p.tienePagos) {
+      <section class="cr-devolucion">
+        <h3 class="cr-sub"><mat-icon>payments</mat-icon> Devolución</h3>
+        <p class="cr-regla">{{ p.regla }}</p>
+        <div class="cr-montos">
+          <div><span>Pagado</span><strong>S/ {{ p.montoPagado | number:'1.2-2' }}</strong></div>
+          <div class="dev"><span>Se devuelve ({{ p.porcentajeReembolso }}%)</span><strong>S/ {{ p.montoReembolso | number:'1.2-2' }}</strong></div>
+          <div><span>Se retiene</span><strong>S/ {{ p.montoRetenido | number:'1.2-2' }}</strong></div>
+        </div>
+        @if (textoDevolucion()) {
+          <p class="cr-nota">{{ textoDevolucion() }}</p>
+        }
+
+        @if (bloqueado()) {
+          <div class="cr-aviso">
+            <mat-icon>lock</mat-icon>
+            <span>Esta reserva ya está pagada: <strong>solo el administrador</strong> puede cancelarla y autorizar la devolución.</span>
+          </div>
+        }
+      </section>
+    }
+  }
+
+  @if (error()) {
+    <div class="cr-aviso error"><mat-icon>error_outline</mat-icon><span>{{ error() }}</span></div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="cr-acciones">
+  <button mat-button type="button" (click)="cerrar()" [disabled]="enviando()">Volver</button>
+  <button mat-flat-button type="button" class="cr-peligro" (click)="confirmar()" [disabled]="!puedeConfirmar()">
+    {{ enviando() ? 'Procesando...' : textoConfirmar() }}
+  </button>
+</mat-dialog-actions>
