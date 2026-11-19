@@ -1,0 +1,120 @@
+<header class="ev-cabecera">
+  <div class="ev-icono"><mat-icon>fact_check</mat-icon></div>
+  <div class="ev-titulo">
+    <h2 mat-dialog-title>Evaluación de daños</h2>
+    <span>{{ codigo }}@if (alquiler.cliente) { &bull; {{ alquiler.cliente.nombres }} {{ alquiler.cliente.apellidos }} }</span>
+  </div>
+  <button mat-icon-button type="button" class="ev-cerrar" (click)="cerrar()" aria-label="Cerrar">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<mat-dialog-content class="ev-cuerpo">
+  @if (cargando()) {
+    <p class="ev-nota">Cargando...</p>
+  } @else {
+  @if (info(); as i) {
+    <section class="ev-resumen">
+      <div><span>Garantía retenida</span><strong>S/ {{ (i.garantia ?? 0) | number:'1.2-2' }}</strong></div>
+      <div><span>Seguro Todo Riesgo</span><strong>{{ i.tieneSeguro ? 'Contratado' : 'No contratado' }}</strong></div>
+      <div><span>Daños nuevos</span><strong>{{ danos().length }}</strong></div>
+    </section>
+
+    <!-- 1. Costo de reparación de cada daño -->
+    <h3 class="ev-sub">1. Costo real de reparación</h3>
+    <p class="ev-ayuda">Ingrese lo que cuesta reparar cada daño según la cotización del taller (puede ser S/ 0.00 si no requiere reparación).</p>
+    @for (d of danos(); track d.idDano) {
+      <div class="ev-dano">
+        <a [href]="foto(d.fotoUrl)" target="_blank" rel="noopener" class="ev-foto" title="Ver foto completa">
+          <img [src]="foto(d.fotoUrl)" alt="Foto del daño" />
+        </a>
+        <div class="ev-dano-txt">
+          <strong>{{ etiquetaZona(d.zona) }} · {{ etiquetaTipo(d.tipo) }}</strong>
+          <span class="ev-grav" [attr.data-g]="d.gravedad">{{ etiquetaGravedad(d.gravedad) }}</span>
+          <p>{{ d.descripcion }}</p>
+          <small>Registrado por {{ d.registradoPor }}</small>
+        </div>
+        <label class="ev-costo">
+          Costo (S/)
+          <input type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"
+                 [value]="costos()[d.idDano] ?? ''" (input)="onCosto(d.idDano, $any($event.target).value)" />
+        </label>
+      </div>
+    }
+
+    <!-- 2. Seguro -->
+    <h3 class="ev-sub">2. Seguro Todo Riesgo</h3>
+    @if (tieneSeguro()) {
+      <p class="ev-ayuda">
+        @if (!seguroNoAplica()) {
+          El cliente contrató el seguro: paga solo el deducible de <strong>S/ {{ (resultado()?.deducible ?? 0) | number:'1.2-2' }}</strong> (o el costo del daño, si es menor) y el seguro cubre el resto.
+        } @else {
+          El seguro no aplica: el cliente paga el costo completo de la reparación.
+        }
+      </p>
+      <label class="ev-excl">
+        <input type="checkbox" [checked]="seguroNoAplica()" (change)="alternarExclusion($any($event.target).checked)" />
+        <span>El seguro no aplica por una exclusión (ebriedad, conductor no autorizado, uso indebido o daño intencional)</span>
+      </label>
+    } @else {
+      <p class="ev-ayuda">El cliente <strong>no contrató</strong> el Seguro Todo Riesgo: paga el costo completo de la reparación. Si supera la garantía, la diferencia queda como deuda.</p>
+    }
+
+    <!-- 3. Resultado -->
+    <h3 class="ev-sub">3. Liquidación de la garantía</h3>
+    @if (resultado(); as r) {
+      <section class="ev-liq">
+        <div class="ev-fila"><span>Costo de reparación de los daños</span><strong>S/ {{ r.costoTotal | number:'1.2-2' }}</strong></div>
+        @if (r.seguroAplica) {
+          <div class="ev-fila"><span>Cubierto por el seguro</span><strong>S/ {{ r.cubiertoSeguro | number:'1.2-2' }}</strong></div>
+        }
+        <div class="ev-fila"><span>{{ r.seguroAplica ? 'Deducible a cargo del cliente' : 'Daños a cargo del cliente' }}</span><strong>S/ {{ r.cargoCliente | number:'1.2-2' }}</strong></div>
+        @if (r.cargoCombustible > 0) {
+          <div class="ev-fila"><span>Combustible faltante</span><strong>S/ {{ r.cargoCombustible | number:'1.2-2' }}</strong></div>
+        }
+        @if (r.cargoRetraso > 0) {
+          <div class="ev-fila"><span>Retraso en la devolución</span><strong>S/ {{ r.cargoRetraso | number:'1.2-2' }}</strong></div>
+        }
+        <div class="ev-fila total"><span>Total que se descuenta de la garantía</span><strong>S/ {{ r.totalCargos | number:'1.2-2' }}</strong></div>
+        <div class="ev-fila"><span>Garantía retenida</span><strong>S/ {{ r.garantia | number:'1.2-2' }}</strong></div>
+        <div class="ev-fila destacada"><span>Garantía que se libera</span><strong>S/ {{ r.garantiaLiberada | number:'1.2-2' }}</strong></div>
+        @if (r.deuda > 0) {
+          <div class="ev-fila deuda"><span>Deuda del cliente (supera la garantía)</span><strong>S/ {{ r.deuda | number:'1.2-2' }}</strong></div>
+        }
+      </section>
+      @if (r.deuda > 0) {
+        <p class="ev-ayuda">El contrato quedará como <strong>Cerrado con deuda</strong> hasta que el cliente pague el saldo.</p>
+      }
+    } @else {
+      <p class="ev-ayuda">Ingrese los costos para ver cómo queda la liquidación.</p>
+    }
+
+    @if (seguroNoAplica()) {
+      <label class="ev-obs">
+        Motivo de la exclusión
+        <input type="text" maxlength="500" placeholder="Ej.: Conductor en estado de ebriedad según examen"
+               [ngModel]="observacion" (ngModelChange)="onObservacion($event)" />
+      </label>
+    }
+
+    @if (error()) {
+      <div class="ev-error"><mat-icon>error_outline</mat-icon><span>{{ error() }}</span></div>
+    }
+  }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="ev-acciones">
+  @if (!completo() && !cargando()) {
+    <span class="ev-faltan">{{ falta() }}</span>
+  }
+  <button mat-button type="button" (click)="cerrar()" [disabled]="enviando()">Cancelar</button>
+  <button mat-flat-button type="button" class="ev-confirmar" (click)="confirmar()" [disabled]="!completo() || enviando() || info()?.estadoDanos !== 'PENDIENTE_EVALUACION'">
+    @if (enviando()) {
+      <span>Registrando...</span>
+    } @else {
+      <mat-icon>check</mat-icon>
+      <span>Confirmar evaluación</span>
+    }
+  </button>
+</mat-dialog-actions>
