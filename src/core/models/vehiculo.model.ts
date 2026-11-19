@@ -7,7 +7,19 @@ export interface VehiculoUnidad {
   color?: string;
   numeroVin?: string;
   numeroMotor?: string;
+  // Odómetro de la unidad y su control de mantenimiento
   kilometraje?: number;
+  kmProximoMantenimiento?: number;
+  kmRestantesMantenimiento?: number;
+  kmIntervaloMantenimiento?: number;
+  // Si está alquilada ahora: a quién y qué contrato
+  alquiladaA?: string | null;
+  // Agenda de la placa: su próxima reserva aprobada y si el recojo está cerca (unidad comprometida)
+  proximaReserva?: string | null;
+  idProximaReserva?: number | null;
+  reservaProximaBloquea?: boolean | null;
+  reemplazoDisponible?: boolean | null;
+  idAlquilerActual?: number | null;
   sede?: string;
   estado?: EstadoVehiculoCatalogo;
 }
@@ -24,6 +36,8 @@ export interface VehiculoModelo {
   precioDia: number;
   precioHora: number;
   garantia?: number;
+  // Cada cuántos km cada unidad del modelo debe pasar por mantenimiento
+  kmMantenimiento?: number;
   activo?: boolean;
   sede?: string;
   imagenUrl?: string;
@@ -45,7 +59,7 @@ export interface Vehiculo {
   precioHora: number;
   imagenUrl?: string;
   sede?: string;
-  kilometraje?: number | null;
+  kmMantenimiento?: number;
   imagenes?: ImagenVehiculo[];
   modelo?: Modelo | any;
   nombreModelo?: string;

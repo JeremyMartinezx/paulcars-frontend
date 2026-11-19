@@ -2,7 +2,6 @@ import { Vehiculo } from '../models/vehiculo.model';
 import { MotivoRechazo, Alquiler } from '../models/alquiler.model';
 import { LiquidacionResponse } from '../models/liquidacion.model';
 
-// Mismas tarifas que TarifarioPaulCars.java (el backend recalcula todo; aquí es solo para mostrar)
 export const TARIFAS = {
   seguroTodoRiesgoDia: 35,
   conductorAdicionalDia: 6.5,
@@ -19,7 +18,6 @@ export function categoriaVehiculo(vehiculo?: Vehiculo | null): Categoria {
   return 'SEDAN';
 }
 
-// Deducible de póliza por categoría. El depósito de garantía usa el mismo monto.
 export function deduciblePorCategoria(vehiculo?: Vehiculo | null): number {
   switch (categoriaVehiculo(vehiculo)) {
     case 'HATCHBACK': return 2500;
@@ -36,14 +34,104 @@ export function garantiaHold(vehiculo?: Vehiculo | null): number {
 export const MOTIVOS_RECHAZO: { valor: MotivoRechazo; titulo: string; detalle: string }[] = [
   { valor: 'DNI_NO_COINCIDE', titulo: 'Inconsistencia en Documento de Identidad', detalle: 'Los datos del documento presentado no coinciden con el registro de la solicitud.' },
   { valor: 'LICENCIA_VENCIDA_INVALIDA', titulo: 'Licencia de Conducir No Vigente', detalle: 'La licencia se encuentra vencida o no figura habilitada ante el MTC.' },
-  { valor: 'HISTORIAL_NEGATIVO', titulo: 'Observación en Historial Operativo o Crediticio', detalle: 'Reporte preventivo en centrales de riesgo o antecedentes de siniestros pendientes.' },
-  { valor: 'SIN_DISPONIBILIDAD_FLOTA', titulo: 'Mantenimiento Preventivo de Flota', detalle: 'La unidad asignada ha ingresado a inspección técnica de seguridad.' },
+  { valor: 'HISTORIAL_NEGATIVO', titulo: 'Obligaciones pendientes de un alquiler anterior', detalle: 'El cliente mantiene un saldo, multa o daño sin regularizar de un alquiler anterior.' },
+  { valor: 'SIN_DISPONIBILIDAD_FLOTA', titulo: 'Vehículo no disponible', detalle: 'La unidad solicitada se encuentra fuera de servicio por mantenimiento o inspección técnica de seguridad.' },
   { valor: 'INCUMPLIMIENTO_POLITICA_EDAD', titulo: 'Criterio de Edad o Experiencia Requerida', detalle: 'No cumple con la edad mínima (21 años) o los 2 años de récord de manejo exigidos.' }
 ];
 
 export function motivoRechazoLegible(valor?: string | null): string {
   const m = MOTIVOS_RECHAZO.find((x) => x.valor === valor);
   return m ? `${m.titulo} (${m.detalle})` : (valor || '');
+}
+
+const MOTIVOS_CANCELACION: Record<string, string> = {
+  CLIENTE_SOLICITO: 'Cancelada a solicitud del cliente',
+  NO_PAGO_EN_PLAZO: 'No se pagó dentro del plazo',
+  VEHICULO_NO_DISPONIBLE: 'Vehículo no disponible',
+  NO_SE_PRESENTO: 'El cliente no se presentó al recojo'
+};
+
+// Explicación de cada causal para el cliente. El título es el mismo que elige el asesor (MOTIVOS_RECHAZO);
+// aquí solo cambia el texto pequeño, que no revela datos internos de la empresa.
+const DETALLE_CLIENTE_RECHAZO: Record<string, string> = {
+  DNI_NO_COINCIDE: 'Los datos del documento presentado no coinciden con el registro de la solicitud.',
+  LICENCIA_VENCIDA_INVALIDA: 'La licencia se encuentra vencida o no figura habilitada ante el MTC.',
+  HISTORIAL_NEGATIVO: 'Su cuenta mantiene saldos o incidencias sin regularizar. Para volver a reservar, deberá resolverlos en cualquiera de nuestras sedes.',
+  SIN_DISPONIBILIDAD_FLOTA: 'El vehículo solicitado no se encuentra disponible. Puede elegir otro desde nuestro catálogo.',
+  INCUMPLIMIENTO_POLITICA_EDAD: 'No cumple con la edad mínima (21 años) o los 2 años de récord de manejo exigidos.'
+};
+
+// Explicación de una cancelación para el cliente. Nunca repite el título y no promete nada que dependa del pago.
+function detalleCancelacion(a: Alquiler, paraPersonal = false): string {
+  switch (a.motivoCancelacion) {
+    case 'CLIENTE_SOLICITO':
+      if (a.canceladoPorRol === 'CLIENTE') {
+        return paraPersonal
+          ? 'El cliente canceló la reserva. Ya no se encuentra vigente.'
+          : 'Usted canceló esta reserva. Ya no se encuentra vigente.';
+      }
+      return paraPersonal
+        ? 'La reserva se canceló a pedido del cliente. Ya no se encuentra vigente.'
+        : 'Atendimos su pedido de cancelar la reserva. Ya no se encuentra vigente.';
+    case 'NO_PAGO_EN_PLAZO':
+      return a.canceladoPor === 'Sistema'
+        ? 'La reserva se canceló automáticamente al vencer el plazo de pago.'
+        : 'La reserva se canceló porque el pago no se registró dentro del plazo establecido.';
+    case 'VEHICULO_NO_DISPONIBLE':
+      return 'Lamentamos no poder entregar el vehículo reservado. Le pedimos disculpas por el inconveniente.';
+    case 'NO_SE_PRESENTO':
+      return 'La reserva se canceló porque no se presentó a retirar el vehículo en la fecha acordada.';
+    default:
+      return '';
+  }
+}
+
+// Quién canceló la reserva. El personal ve el nombre; el cliente ve "Usted", "Paul Car's" o "el sistema" (sin datos internos).
+function quienCancelo(a: Alquiler, paraPersonal: boolean): string {
+  const nombre = a.canceladoPor && a.canceladoPor !== 'Sistema' ? a.canceladoPor : '';
+  const rol = a.canceladoPorRol || (a.canceladoPor === 'Sistema' ? 'SISTEMA' : null);
+  switch (rol) {
+    case 'CLIENTE':
+      return paraPersonal ? `El cliente${nombre ? ' (' + nombre + ')' : ''}, desde su cuenta` : 'Usted';
+    case 'ADMINISTRADOR':
+      return paraPersonal ? `El administrador${nombre ? ' (' + nombre + ')' : ''}` : "Paul Car's";
+    case 'ASESOR':
+      return paraPersonal ? `El asesor${nombre ? ' (' + nombre + ')' : ''}` : "Paul Car's";
+    case 'SISTEMA':
+      return 'El sistema, de forma automática';
+    default:
+      return paraPersonal ? (nombre ? nombre : 'No quedó registrado') : '';
+  }
+}
+
+// Por qué una reserva quedó cancelada o una solicitud rechazada: título corto y explicación (nunca repite el título)
+export function motivoDeCierre(a: Alquiler, paraPersonal = false): { titulo: string; detalle: string; quien?: string } | null {
+  const e = (a.estado?.nombreEstado || '').toUpperCase();
+  if (e === 'CANCELADO') {
+    // Cuando la cancelación fue a pedido del cliente, ese es el único dato: no se repite quién la registró
+    if (a.motivoCancelacion === 'CLIENTE_SOLICITO') {
+      const propia = a.canceladoPorRol === 'CLIENTE';
+      return {
+        titulo: propia ? (paraPersonal ? 'Cancelada por el cliente' : 'Usted canceló esta reserva') : 'Cancelada a pedido del cliente',
+        detalle: ''
+      };
+    }
+    const titulo = MOTIVOS_CANCELACION[a.motivoCancelacion || ''] || 'Reserva cancelada';
+    const quien = quienCancelo(a, paraPersonal);
+    return { titulo, detalle: detalleCancelacion(a, paraPersonal), quien: quien || undefined };
+  }
+  if (e === 'CANCELADO_SIN_STOCK') {
+    return { titulo: 'Unidades agotadas por alta demanda', detalle: 'No quedaron vehículos disponibles de este modelo para las fechas pedidas.' };
+  }
+  if (e === 'RECHAZADO' || e === 'RECHAZADO_DOCUMENTACION') {
+    const m = MOTIVOS_RECHAZO.find((x) => x.valor === a.motivoRechazo);
+    return {
+      titulo: m ? m.titulo : 'Solicitud no aprobada',
+      // El personal ve la razón operativa; el cliente, un texto que no revela datos internos de la empresa
+      detalle: paraPersonal ? (m?.detalle || '') : (DETALLE_CLIENTE_RECHAZO[a.motivoRechazo || ''] || '')
+    };
+  }
+  return null;
 }
 
 export function etiquetaEstadoAlquiler(estado?: string | null): string {
@@ -56,16 +144,16 @@ export function etiquetaEstadoAlquiler(estado?: string | null): string {
       return 'Reservado';
     case 'ACTIVO': return 'En ruta';
     case 'FINALIZADO': return 'Finalizado';
-    case 'CANCELADO': return 'Cancelado';
-    case 'RECHAZADO': return 'Rechazado';
+    case 'CANCELADO':
+    case 'CANCELADO_SIN_STOCK':
+      return 'Cancelado';
+    case 'RECHAZADO':
+    case 'RECHAZADO_DOCUMENTACION':
+      return 'Rechazado';
     default: return estado || '';
   }
 }
 
-/**
- * Formato unificado de referencia pública de contrato / reserva para cliente y administración:
- * Ejemplo: N° ALQ-000037
- */
 export function formatearCodigoAlquiler(id?: number | string | null): string {
   if (!id) return 'N° ALQ-000000';
   const num = typeof id === 'string' ? parseInt(id.replace(/\D/g, ''), 10) : id;
