@@ -138,8 +138,8 @@ export class ListarClientesComponent implements OnInit {
 
       this.clienteService.agregar(resultado).subscribe({
         next: () => {
-          
           this.paginaActual.set(1);
+          this.avisar('Cliente registrado correctamente.');
         },
         error: (err) => this.mostrarError(err, 'registrar')
       });
@@ -156,7 +156,10 @@ export class ListarClientesComponent implements OnInit {
       if (!resultado) return;
 
       this.clienteService.actualizar(cliente.idCliente!, resultado).subscribe({
-        next: () => this.clienteService.cargar(),
+        next: () => {
+          this.clienteService.cargar();
+          this.avisar('Datos del cliente actualizados.');
+        },
         error: (err) => this.mostrarError(err, 'actualizar')
       });
     });
@@ -174,10 +177,17 @@ export class ListarClientesComponent implements OnInit {
       if (!confirmado) return;
 
       this.clienteService.eliminar(cliente.idCliente!).subscribe({
-        next: () => this.clienteService.cargar(),
+        next: () => {
+          this.clienteService.cargar();
+          this.avisar('Cliente eliminado.');
+        },
         error: (err) => this.mostrarError(err, 'eliminar')
       });
     });
+  }
+
+  private avisar(mensaje: string): void {
+    this.snackBar.open(mensaje, 'Cerrar', { duration: 3000 });
   }
 
   // Consulta de historial (asesor y admin)
