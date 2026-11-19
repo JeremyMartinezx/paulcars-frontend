@@ -80,14 +80,6 @@
         </div>
 
         <div class="dato-card">
-          <div class="dato-icon"><mat-icon>phone</mat-icon></div>
-          <div class="dato-content">
-            <span class="dato-label">Teléfono celular</span>
-            <strong class="dato-valor">{{ formPerfil.telefono || 'No registrado' }}</strong>
-          </div>
-        </div>
-
-        <div class="dato-card">
           <div class="dato-icon"><mat-icon>mail</mat-icon></div>
           <div class="dato-content">
             <span class="dato-label">Correo electrónico</span>
@@ -128,12 +120,12 @@
         <div class="perfil-form-grid">
           <label class="form-field">
             <span>Nombres completos</span>
-            <input type="text" [(ngModel)]="formPerfil.nombres" name="nombres" required placeholder="Ej: Carlos Miguel">
+            <input type="text" [(ngModel)]="formPerfil.nombres" name="nombres" required placeholder="Ej: Carlos">
           </label>
 
           <label class="form-field">
             <span>Apellidos completos</span>
-            <input type="text" [(ngModel)]="formPerfil.apellidos" name="apellidos" required placeholder="Ej: Mendoza Muñoz">
+            <input type="text" [(ngModel)]="formPerfil.apellidos" name="apellidos" required placeholder="Ej: Mendoza Rivas">
           </label>
 
           <label class="form-field">
@@ -149,18 +141,6 @@
             >
           </label>
 
-          <label class="form-field">
-            <span>Teléfono celular</span>
-            <input
-              type="tel"
-              [(ngModel)]="formPerfil.telefono"
-              name="telefono"
-              maxlength="9"
-              inputmode="numeric"
-              (input)="onTelefonoInput($event)"
-              placeholder="Ej: 959137712"
-            >
-          </label>
 
           <label class="form-field">
             <span>Correo electrónico</span>

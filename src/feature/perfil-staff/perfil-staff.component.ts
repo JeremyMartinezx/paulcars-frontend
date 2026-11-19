@@ -67,126 +67,47 @@ export class PerfilStaffComponent implements OnInit {
     confirmar: ''
   };
 
+  // Nombre que se muestra: primer nombre y primer apellido, tal como están registrados
   readonly nombreHeroVisual = computed(() => {
     this.perfilActualizado();
-    if (this.esAdmin()) {
-      return 'Paul Cars Administrador';
-    }
-
-    // Para el Asesor: formato dinámico "Asesor [PrimerNombre] [PrimerApellido]"
-    const n = (this.formPerfil.nombres || '').trim();
-    const a = (this.formPerfil.apellidos || '').trim();
-
-    let primerNombre = '';
-    let primerApellido = '';
-
-    if (n.includes('Counter')) {
-      const tokens = n.split('-')[0].trim().split(/\s+/);
-      primerNombre = tokens[0] || 'Carlos';
-      primerApellido = tokens[1] || 'Mendoza';
-    } else {
-      primerNombre = n ? n.split(/\s+/)[0] : 'Carlos';
-      primerApellido = a ? a.split(/\s+/)[0] : 'Mendoza';
-    }
-
-    return `Asesor ${primerNombre} ${primerApellido}`.trim();
+    const n = (this.formPerfil.nombres || '').trim().split(/\s+/)[0] || '';
+    const a = (this.formPerfil.apellidos || '').trim().split(/\s+/)[0] || '';
+    return `${n} ${a}`.trim() || this.usuario()?.nombre || 'Usuario';
   });
 
-  // Para retrocompatibilidad
   readonly nombreCompletoVisual = computed(() => this.nombreHeroVisual());
 
   ngOnInit(): void {
     this.cargarDatosPerfil();
   }
 
+  // Los datos salen del propio usuario registrado en el sistema
   cargarDatosPerfil(): void {
     const user = this.usuario();
-    const username = user?.username || 'usuario';
-    const email = user?.email || (username.includes('@') ? username : `${username}@paulcars.com`);
-    const rolEtiqueta = this.etiquetaRol();
-
-    // Valores por defecto según rol
-    let defaultNombres = this.esAdmin() ? 'Víctor Manuel' : 'Carlos Miguel';
-    let defaultApellidos = this.esAdmin() ? 'Paredes Silva' : 'Mendoza Muñoz';
-    let defaultDni = this.esAdmin() ? '70000001' : '72172845';
-    let defaultTelefono = this.esAdmin() ? '959137712' : '978111232';
-
-    // Cargar si existe personalización previa en localStorage
-    if (typeof localStorage !== 'undefined') {
-      const stored = localStorage.getItem('paulcars_perfil_staff_' + username);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored) as FormPerfilStaff;
-          // Sanitizar datos anteriores con valores obsoletos
-          const esObsoletoAsesor = !this.esAdmin() && (
-            parsed.nombres?.includes('Counter') ||
-            parsed.apellidos === 'Muñoz' ||
-            parsed.nombres === 'Asesor'
-          );
-          const esObsoletoAdmin = this.esAdmin() && (
-            parsed.nombres?.includes('Paul Cars') ||
-            parsed.apellidos?.includes('Administrador')
-          );
-
-          if (!esObsoletoAsesor && !esObsoletoAdmin) {
-            defaultNombres = parsed.nombres || defaultNombres;
-            defaultApellidos = parsed.apellidos || defaultApellidos;
-            defaultDni = parsed.numeroDocumento || defaultDni;
-            defaultTelefono = parsed.telefono || defaultTelefono;
-          } else {
-            localStorage.removeItem('paulcars_perfil_staff_' + username);
-          }
-        } catch (_) {}
-      }
-    }
-
+    const username = user?.username || '';
     this.formPerfil = {
-      nombres: defaultNombres,
-      apellidos: defaultApellidos,
-      numeroDocumento: defaultDni,
-      telefono: defaultTelefono,
-      email: email,
-      rol: rolEtiqueta
+      nombres: '',
+      apellidos: '',
+      numeroDocumento: '',
+      telefono: '',
+      email: user?.email || username,
+      rol: this.etiquetaRol()
     };
-    this.perfilActualizado.update(v => v + 1);
+    this.perfilActualizado.update((v) => v + 1);
 
-    // Intentar sincronizar con el backend si existe registro asociado
-    this.clienteService.obtenerMiPerfil().subscribe({
-      next: (c) => {
-        if (c) {
-          if (c.nombres && !c.nombres.toLowerCase().includes('cliente') && !c.nombres.toLowerCase().includes('por completar')) {
-            if (this.esAdmin() && c.nombres.includes('Paul Cars')) {
-              this.formPerfil.nombres = 'Víctor Manuel';
-            } else if (!this.esAdmin() && c.nombres.includes('Counter')) {
-              this.formPerfil.nombres = 'Carlos Miguel';
-            } else {
-              this.formPerfil.nombres = c.nombres.trim();
-            }
-          }
-          if (c.apellidos && !c.apellidos.toLowerCase().includes('por completar')) {
-            if (this.esAdmin() && c.apellidos.includes('Administrador')) {
-              this.formPerfil.apellidos = 'Paredes Silva';
-            } else if (!this.esAdmin() && c.apellidos === 'Muñoz') {
-              this.formPerfil.apellidos = 'Mendoza Muñoz';
-            } else {
-              this.formPerfil.apellidos = c.apellidos.trim();
-            }
-          }
-          if (c.numeroDocumento && !c.numeroDocumento.startsWith('PEND-')) {
-            this.formPerfil.numeroDocumento = c.numeroDocumento.trim();
-          }
-          if (c.telefono && c.telefono !== '000000000' && c.telefono !== '999999999') {
-            this.formPerfil.telefono = c.telefono.trim();
-          }
-          if (c.email && c.email.includes('@')) {
-            this.formPerfil.email = c.email.trim();
-          }
-          this.perfilActualizado.update(v => v + 1);
-        }
+    this.authService.obtenerPerfilPersonal().subscribe({
+      next: (p) => {
+        this.formPerfil = {
+          nombres: p.nombres || '',
+          apellidos: p.apellidos || '',
+          numeroDocumento: p.dni || '',
+          telefono: '',
+          email: p.email || username,
+          rol: this.etiquetaRol()
+        };
+        this.perfilActualizado.update((v) => v + 1);
       },
-      error: () => {
-        // Usa los valores por defecto / locales sin interrumpir la interfaz
-      }
+      error: () => undefined
     });
   }
 
@@ -208,12 +129,6 @@ export class PerfilStaffComponent implements OnInit {
     this.formPerfil.numeroDocumento = input.value;
   }
 
-  onTelefonoInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    input.value = input.value.replace(/\D/g, '').slice(0, 9);
-    this.formPerfil.telefono = input.value;
-  }
-
   guardarPerfil(): void {
     this.mensajeExitoPerfil.set(null);
     this.mensajeErrorPerfil.set(null);
@@ -221,54 +136,32 @@ export class PerfilStaffComponent implements OnInit {
     const nombres = (this.formPerfil.nombres || '').trim();
     const apellidos = (this.formPerfil.apellidos || '').trim();
     const dni = (this.formPerfil.numeroDocumento || '').trim();
-    const telefono = (this.formPerfil.telefono || '').trim();
 
     if (!nombres) {
-      this.mensajeErrorPerfil.set('Ingresa tus nombres completos.');
+      this.mensajeErrorPerfil.set('Ingresa tus nombres.');
       return;
     }
     if (!apellidos) {
-      this.mensajeErrorPerfil.set('Ingresa tus apellidos completos.');
+      this.mensajeErrorPerfil.set('Ingresa tus apellidos.');
       return;
     }
-    if (!dni || dni.length !== 8) {
+    if (dni.length !== 8) {
       this.mensajeErrorPerfil.set('El DNI debe contener exactamente 8 dígitos numéricos.');
-      return;
-    }
-    if (telefono && telefono.length !== 9) {
-      this.mensajeErrorPerfil.set('El teléfono celular debe contener 9 dígitos.');
       return;
     }
 
     this.guardandoPerfil.set(true);
-
-    const username = this.usuario()?.username || 'usuario';
-
-    // Persistir localmente de inmediato para respuesta fluida
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('paulcars_perfil_staff_' + username, JSON.stringify(this.formPerfil));
-    }
-    this.perfilActualizado.update(v => v + 1);
-
-    // Actualizar en el backend
-    this.clienteService.actualizarMiPerfil({
-      nombres,
-      apellidos,
-      tipoDocumento: 'DNI',
-      numeroDocumento: dni,
-      telefono
-    }).subscribe({
+    this.authService.actualizarPerfilPersonal({ nombres, apellidos, dni }).subscribe({
       next: () => {
         this.guardandoPerfil.set(false);
         this.editandoPerfil.set(false);
-        this.mensajeExitoPerfil.set('¡Datos de tu perfil actualizados con éxito!');
+        this.perfilActualizado.update((v) => v + 1);
+        this.mensajeExitoPerfil.set('Datos actualizados.');
         this.authService.refrescarPerfil();
       },
-      error: () => {
+      error: (err) => {
         this.guardandoPerfil.set(false);
-        this.editandoPerfil.set(false);
-        this.mensajeExitoPerfil.set('¡Datos de tu perfil actualizados con éxito!');
-        this.authService.refrescarPerfil();
+        this.mensajeErrorPerfil.set(err?.error?.message || 'No se pudieron guardar los datos.');
       }
     });
   }
