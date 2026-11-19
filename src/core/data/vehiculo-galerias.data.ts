@@ -1,7 +1,7 @@
 import { Vehiculo } from '../models/vehiculo.model';
 import { resolverUrlImagen } from '../utils/imagen-url.util';
 
-// Etiquetas de la galería de 4 fotos cargada desde el panel admin
+
 const LABELS_GALERIA_ADMIN = ['Frontal 3/4', 'Lateral', 'Posterior', 'Habitáculo / Interior'];
 
 export interface GaleriaFoto {
@@ -239,7 +239,7 @@ const LABELS_DEFAULT = [
 export function obtenerGaleriaVehiculo(vehiculo: Vehiculo | null | undefined): GaleriaFoto[] {
   if (!vehiculo) return [];
 
-  // 1) Si el administrador cargó fotos, esas mandan (ordenadas de 1 a 4)
+  
   const propias = [...(vehiculo.imagenes ?? [])]
     .filter((img) => !!img?.urlImagen)
     .sort((a, b) => a.orden - b.orden);
