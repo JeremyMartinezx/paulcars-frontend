@@ -69,3 +69,18 @@ src/
 ├── shared/       # Componentes reutilizables
 └── environments/ # Configuración por entorno
 ```
+
+## Control de versiones
+
+El proyecto sigue un flujo de trabajo por ramas:
+
+| Rama | Uso |
+|---|---|
+| `main` | Versión estable. Solo recibe *merges* desde `develop` y lleva las etiquetas de versión (`v1.0.0`, `v1.1.0`, ...). |
+| `develop` | Integración: aquí se unen las ramas de trabajo ya terminadas. |
+| `feature/*` | Una rama por tema (por ejemplo, `feature/pagos`), creada desde `develop` y unida con `merge --no-ff` para conservar el historial. |
+| `fix/*`, `refactor/*`, `docs/*` | Correcciones, reorganizaciones y documentación. |
+
+**Mensajes de commit:** `tipo(alcance): descripción`, con los tipos `feat`, `fix`, `refactor`, `style`, `docs`, `build`, `chore` y `test`.
+
+**Versiones:** [versionado semántico](https://semver.org/lang/es/) (`MAJOR.MINOR.PATCH`). Los cambios de cada versión están en [CHANGELOG.md](CHANGELOG.md).
