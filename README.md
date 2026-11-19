@@ -1,42 +1,33 @@
 # Paul Car's — Frontend (Angular)
 
-Interfaz web del sistema de alquiler de vehículos **Paul Car's**: catálogo público de vehículos, reservas, y paneles internos para empleados y administradores.
+Interfaz web del sistema de alquiler de vehículos **Paul Car's**: catálogo público, reserva en línea, portal del cliente y paneles de trabajo para asesores y administradores.
 
 ## Tecnologías
 
-- Angular 19 (standalone components, signals)
-- Angular Material
-- TypeScript
-- RxJS
+- Angular (componentes *standalone* y *signals*) y Angular Material
+- TypeScript · RxJS
+- Despliegue en Vercel (`vercel.json` con cabeceras de seguridad y reescritura SPA)
 
-## Requisitos previos
+## Requisitos
 
-- Node.js 20 o superior
-- npm
-- El [backend](../alquiler_de_vehiculos) corriendo en `http://localhost:8080` (ver su propio README para levantarlo)
+- Node.js 20 o superior y npm
+- El [backend](https://github.com/JeremyMartinezx/paulcars-backend) en `http://localhost:8080`
 
-## Instalación
+## Puesta en marcha
 
 ```bash
 npm install
-```
-
-## Configuración de entornos
-
-Las URLs del backend salen de `src/environments/`, no están escritas a mano en cada servicio:
-
-- `src/environments/environment.ts` → usado en desarrollo (`apiUrl: 'http://localhost:8080/api'`)
-- `src/environments/environment.prod.ts` → usado al compilar con `--configuration production`
-
-Si tu backend corre en otra URL o puerto, solo cambia `apiUrl` en el archivo correspondiente.
-
-## Levantar en desarrollo
-
-```bash
 ng serve
 ```
 
-Abre `http://localhost:4200/`. La app recarga sola al guardar cambios.
+Abre `http://localhost:4200/`.
+
+## Entornos
+
+La URL de la API sale de `src/environments/`:
+
+- `environment.ts` → desarrollo (`http://localhost:8080/api`)
+- `environment.prod.ts` → producción (servicio del backend en Render)
 
 ## Compilar para producción
 
@@ -44,43 +35,37 @@ Abre `http://localhost:4200/`. La app recarga sola al guardar cambios.
 ng build --configuration production
 ```
 
-Los archivos compilados quedan en `dist/alquiler-vehiculos-ui/`, ya usando `environment.prod.ts`.
+La salida queda en `dist/alquiler-vehiculos-ui/browser`.
 
-## Correr pruebas
+## Módulos
 
-```bash
-ng test
-```
+| Carpeta | Contenido |
+|---|---|
+| `feature/home`, `nosotros`, `contacto` | Páginas públicas |
+| `feature/catalogo`, `reservas` | Catálogo con filtros por sede y fechas (solo aparece lo que hay en la sede elegida) y reserva en línea |
+| `feature/auth` | Inicio de sesión y solicitud de cuenta |
+| `feature/cliente` | Portal del cliente: mis reservas por estado, pago con tarjeta, Yape o Plin, perfil |
+| `feature/alquileres` | Alquileres del personal: tabla con orden y filtros, nuevo alquiler (la sede sin stock queda bloqueada), cobro, entrega de llaves con acta, recepción con inspección, daños, cancelación con reembolso y comprobantes PDF |
+| `feature/vehiculos` | Flota: modelos con fotos y color, placas por sede |
+| `feature/clientes` | Alta, edición e historial de clientes |
+| `feature/admin` | Usuarios y roles, catálogos base y reportes con exportación |
+| `shared`, `core` | Componentes reutilizables, guards, interceptor de sesión, modelos y servicios |
 
-## Usuarios de prueba
+## Roles
 
-| Usuario | Rol | Acceso |
-|---|---|---|
-| (el primero que se registre por `/solicitar-cuenta`) | ADMIN | Panel completo (`/admin`) |
-| Empleados creados desde `/admin/usuarios` | EMPLEADO | Panel operativo (`/empleado`) |
+- **Visitante:** catálogo y reserva pública.
+- **Cliente:** sus reservas, pagos y comprobantes.
+- **Asesor (`EMPLEADO`):** clientes, alquileres, cobro, entrega y recepción.
+- **Administrador:** todo lo anterior más flota, usuarios, catálogos y reportes.
 
-## Estructura del proyecto
+## Estructura
 
 ```
 src/
-├── app/            # Configuración raíz y rutas
-├── core/           # Guards, interceptores, modelos y servicios compartidos
-├── feature/        # Un subdirectorio por módulo funcional
-│   ├── admin/          # Dashboard admin, usuarios, reportes, catálogo base
-│   ├── alquileres/     # Listado y formulario de alquileres
-│   ├── auth/            # Login, solicitud de cuenta
-│   ├── catalogo/        # Catálogo público de vehículos
-│   ├── clientes/        # Gestión de clientes
-│   ├── empleado/        # Dashboard de empleado
-│   ├── reservas/        # Flujo público de reserva
-│   └── vehiculos/       # Gestión de vehículos
-├── layouts/        # Layout principal (header + footer)
-├── shared/         # Componentes reutilizables (confirmación, back-button, etc.)
-└── environments/   # Configuración por entorno (dev/prod)
+├── app/          # Configuración raíz y rutas con lazy loading
+├── core/         # Guards, interceptor, modelos, servicios y utilidades
+├── feature/      # Un directorio por módulo funcional
+├── layouts/      # Layout principal
+├── shared/       # Componentes reutilizables
+└── environments/ # Configuración por entorno
 ```
-
-## Roles y accesos
-
-- **Público / no autenticado:** home, catálogo, nosotros, contacto, reservar.
-- **EMPLEADO:** Vehículos, Clientes, Alquileres (crear y editar; no puede eliminar).
-- **ADMIN:** todo lo anterior, más eliminar registros, y el panel `/admin` (usuarios, reportes, catálogo base).
