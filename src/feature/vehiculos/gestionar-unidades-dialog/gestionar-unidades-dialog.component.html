@@ -73,6 +73,10 @@
           <span class="dot-estado alq"></span>
           <span>Alquilado ({{ conteoPorEstado('ALQUILADO') }})</span>
         </button>
+        <button mat-menu-item (click)="setFiltroEstado('NO DISPONIBLE')" [class.active-item]="filtroEstado() === 'NO DISPONIBLE'">
+          <span class="dot-estado nodisp"></span>
+          <span>No disponible ({{ conteoPorEstado('NO DISPONIBLE') }})</span>
+        </button>
       </mat-menu>
 
       <div class="stat-spacer"></div>
@@ -100,6 +104,11 @@
               <mat-option value="MIRAFLORES">Sede Miraflores</mat-option>
               <mat-option value="AEROPUERTO">Sede Aeropuerto</mat-option>
             </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-item">
+            <mat-label>Kilometraje actual (km)</mat-label>
+            <input matInput type="number" min="0" inputmode="numeric" [(ngModel)]="nuevoKm" placeholder="Ej: 0 si es nueva">
           </mat-form-field>
         </div>
 
@@ -142,6 +151,8 @@
             <tr>
               <th>Placa</th>
               <th>Sede</th>
+              <th class="th-km">Kilometraje</th>
+              <th>Mantenimiento</th>
               <th>Estado Operativo</th>
               @if (esAdmin()) {
                 <th class="th-acciones">Acciones</th>
@@ -157,14 +168,26 @@
                 <td>
                   <span class="sede-tag">{{ u.sede || 'MIRAFLORES' }}</span>
                 </td>
+                <td class="td-km">
+                  <strong>{{ (u.kilometraje ?? 0) | number }} km</strong>
+                </td>
                 <td>
-                  @if (esAdmin()) {
+                  <span class="badge-mant" [ngClass]="estadoMantenimiento(u).clase">
+                    {{ estadoMantenimiento(u).texto }}
+                  </span>
+                  @if (obtenerEstadoValor(u) !== 'MANTENIMIENTO') {
+                    <small class="mant-proximo-km">Próximo: {{ (u.kmProximoMantenimiento ?? 0) | number }} km</small>
+                  }
+                </td>
+                <td>
+                  @if (esAdmin() && !estaAlquilada(u)) {
                     <mat-form-field appearance="outline" class="select-estado-mini">
                       <mat-select
+                        panelClass="panel-estado-unidad"
                         [value]="obtenerEstadoValor(u)"
                         (selectionChange)="cambiarEstado(u, $event.value)"
                       >
-                        @for (est of estadosPosibles; track est.valor) {
+                        @for (est of opcionesEstado(u); track est.valor) {
                           <mat-option [value]="est.valor">
                             <span class="dot-estado" [ngClass]="est.color"></span>
                             {{ est.label }}
@@ -177,6 +200,15 @@
                       <span class="dot-estado" [ngClass]="obtenerColorDot(obtenerEstadoValor(u))"></span>
                       {{ obtenerEstadoLabel(obtenerEstadoValor(u)) }}
                     </span>
+                    @if (estaAlquilada(u)) {
+                      <small class="alquilada-a">
+                        @if (u.alquiladaA) {
+                          A {{ u.alquiladaA }}@if (u.idAlquilerActual) { &bull; ALQ-{{ ('000000' + u.idAlquilerActual).slice(-6) }} }
+                        } @else {
+                          Sin contrato activo
+                        }
+                      </small>
+                    }
                   }
                 </td>
                 @if (esAdmin()) {
