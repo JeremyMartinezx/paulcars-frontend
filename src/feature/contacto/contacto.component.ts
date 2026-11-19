@@ -9,4 +9,3 @@ import { CommonModule } from '@angular/common';
   styleUrl: './contacto.component.css'
 })
 export class ContactoComponent {}
-
