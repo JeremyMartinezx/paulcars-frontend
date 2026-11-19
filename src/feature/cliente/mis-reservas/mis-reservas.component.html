@@ -47,6 +47,30 @@
           }
         </button>
 
+        <!-- Orden de la tabla: lo último que reservó, o lo que está más próximo a recoger -->
+        <button
+          type="button"
+          class="filtro-btn btn-orden"
+          [matMenuTriggerFor]="menuOrden"
+          matTooltip="Ordenar la tabla"
+        >
+          <mat-icon class="ic-orden">swap_vert</mat-icon>
+          <span>{{ textoOrden() }}</span>
+          <mat-icon class="ic-orden">arrow_drop_down</mat-icon>
+        </button>
+
+        <mat-menu #menuOrden="matMenu" class="menu-orden-panel" xPosition="after">
+          <div class="menu-grupo-header">ORDENAR POR</div>
+          <button mat-menu-item (click)="cambiarOrden('REGISTRO')" [class.opcion-seleccionada]="ordenModo() === 'REGISTRO'">
+            <mat-icon class="item-check">{{ ordenModo() === 'REGISTRO' ? 'check' : '' }}</mat-icon>
+            <span>Más recientes primero</span>
+          </button>
+          <button mat-menu-item (click)="cambiarOrden('INTELIGENTE')" [class.opcion-seleccionada]="ordenModo() === 'INTELIGENTE'">
+            <mat-icon class="item-check">{{ ordenModo() === 'INTELIGENTE' ? 'check' : '' }}</mat-icon>
+            <span>Próximas a recoger primero</span>
+          </button>
+        </mat-menu>
+
         <button
           type="button"
           class="filtro-btn"
@@ -98,6 +122,17 @@
           <span>Finalizadas</span>
           @if (conteoFinalizadasTotal() > 0) {
             <span class="pill-cnt">({{ conteoFinalizadasTotal() }})</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="filtro-btn"
+          [class.active]="filtroEstado() === 'CANCELADO' && !soloHoy()"
+          (click)="cambiarFiltro('CANCELADO')"
+        >
+          <span>Canceladas</span>
+          @if (conteoCanceladas() > 0) {
+            <span class="pill-cnt">({{ conteoCanceladas() }})</span>
           }
         </button>
       </div>
@@ -175,10 +210,12 @@
             <tr>
               <th scope="col" class="col-vehiculo">VEHÍCULO</th>
               <th scope="col" class="col-periodo">PERIODO</th>
+              <th scope="col" class="col-registro">ÚLTIMO CAMBIO</th>
               <th scope="col" class="col-estado" style="text-align: center;">ESTADO</th>
               @if (mostrarColumnaAccion()) {
                 <th scope="col" class="col-accion" style="text-align: center;">ACCIÓN</th>
               }
+              <th scope="col" class="col-detalle" style="text-align: center;">DETALLE</th>
               <th scope="col" class="col-comprobante" style="text-align: center;">COMPROBANTE</th>
             </tr>
           </thead>
@@ -204,18 +241,17 @@
                 </td>
 
                 <td class="col-periodo">
-                  <div class="periodo-asesor-cell">
-                    <div class="periodo-linea">
-                      <mat-icon class="ic-periodo">calendar_today</mat-icon>
-                      <strong class="fecha-txt">{{ alq.fechaInicio }}</strong>
-                      <span class="hora-badge">{{ alq.horaRecojo || '10:00' }} hrs</span>
-                    </div>
-                    <div class="periodo-linea sub">
-                      <mat-icon class="ic-periodo">event_repeat</mat-icon>
-                      <span class="fecha-txt">{{ alq.fechaFinEstimada }}</span>
-                      <span class="hora-badge sub">{{ alq.horaDevolucion || '18:00' }} hrs</span>
-                    </div>
+                  <div
+                    class="periodo-compacto"
+                    [matTooltip]="'Recojo: ' + alq.fechaInicio + ' ' + (alq.horaRecojo || '10:00') + ' hrs  ·  Devolución: ' + alq.fechaFinEstimada + ' ' + (alq.horaDevolucion || '18:00') + ' hrs'"
+                  >
+                    <span class="periodo-fechas">{{ fechaDiaMes(alq.fechaInicio) }} <mat-icon class="flecha-periodo">arrow_right_alt</mat-icon> {{ fechaDiaMes(alq.fechaFinEstimada) }}</span>
                   </div>
+                </td>
+
+                <!-- COLUMNA ÚLTIMO CAMBIO: cuándo cambió por última vez el estado, con hora, minuto y segundo -->
+                <td class="col-registro">
+                  <span class="registro-fecha" [matTooltip]="'Último cambio de estado. La solicitud se registró el ' + fechaHoraCorta(alq.fechaRegistro)">{{ fechaHoraCorta(alq.fechaUltimoEstado || alq.fechaRegistro) }}</span>
                 </td>
 
 
@@ -240,12 +276,8 @@
                       } @else {
                         <span class="badge-estado badge-finalizado">Finalizado</span>
                       }
-                    } @else if (est === 'CANCELADO_SIN_STOCK') {
-                      <span class="badge-estado badge-sin-stock" title="Vehículo agotado por alta demanda">Agotado por alta demanda</span>
-                      <small class="nota-sin-stock" style="display:block; font-size:10.5px; color:#b91c1c; margin-top:3px; max-width:140px; line-height:1.2;">Unidades agotadas por alta demanda</small>
-                    } @else if (est === 'RECHAZADO' || est === 'RECHAZADO_DOCUMENTACION') {
-                      <span class="badge-estado badge-rechazado" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;">Rechazado &bull; Docs</span>
-                    } @else if (est === 'CANCELADO') {
+                    } @else if (esCancelada(alq)) {
+                      <!-- Cancelada, rechazada o sin unidades: un solo estado. El motivo se ve en "Detalle" -->
                       <span class="badge-estado badge-cancelado">Cancelado</span>
                     } @else {
                       <span class="badge-estado badge-finalizado">{{ est }}</span>
@@ -294,24 +326,23 @@
                   </td>
                 }
 
-                <!-- COLUMNA COMPROBANTE (Nueva columna separada) -->
+                <!-- COLUMNA DETALLE: toda la información de la reserva (según su estado) -->
+                <td class="col-detalle" style="text-align: center;">
+                  <button type="button" class="btn-tabla-comprobante" (click)="verDetalle(alq)">
+                    <mat-icon class="btn-ic">visibility</mat-icon>
+                    <span>Ver detalle</span>
+                  </button>
+                </td>
+
+                <!-- COLUMNA COMPROBANTE: solo el PDF; no existe en solicitudes, por pagar ni canceladas -->
                 <td class="col-comprobante" style="text-align: center;">
-                  @let pagado = esReservaPagada(alq) || est === 'PAGADO' || est === 'CONFIRMADO' || est === 'ACTIVO' || est === 'EN_CURSO' || est === 'EN CURSO' || est === 'FINALIZADO';
-                  @if (est === 'CANCELADO' || est === 'RECHAZADO' || est === 'CANCELADO_SIN_STOCK' || est === 'RECHAZADO_DOCUMENTACION') {
-                    <span class="tabla-vacio-dash">&mdash;</span>
-                  } @else {
-                    <button
-                      type="button"
-                      class="btn-tabla-comprobante"
-                      (click)="abrirModalLiquidacion(alq)"
-                    >
-                      <mat-icon class="btn-ic">
-                        {{ est === 'PENDIENTE' ? 'description' : (!pagado ? 'event_note' : 'receipt_long') }}
-                      </mat-icon>
-                      <span>
-                        {{ est === 'PENDIENTE' ? 'Solicitud' : (!pagado ? 'Reserva' : 'Ver') }}
-                      </span>
+                  @if (tieneComprobante(alq)) {
+                    <button type="button" class="btn-tabla-comprobante" (click)="verComprobante(alq)">
+                      <mat-icon class="btn-ic">picture_as_pdf</mat-icon>
+                      <span>Ver PDF</span>
                     </button>
+                  } @else {
+                    <span class="tabla-vacio-dash">&mdash;</span>
                   }
                 </td>
               </tr>

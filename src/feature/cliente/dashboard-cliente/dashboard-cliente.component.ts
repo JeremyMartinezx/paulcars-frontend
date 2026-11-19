@@ -23,7 +23,9 @@ import {
   LiquidacionAlquiler,
   obtenerLiquidacionAlquiler
 } from '../../../core/utils/reglas-negocio.util';
-import { ActaLiquidacionDialogComponent } from '../../alquileres/acta-liquidacion-dialog/acta-liquidacion-dialog.component';
+import { fechaDiaMes } from '../../../core/utils/descarga.util';
+import { ComprobanteAlquilerService } from '../../../core/service/comprobante-alquiler.service';
+import { DetalleAlquilerDialogComponent } from '../../alquileres/detalle-alquiler-dialog/detalle-alquiler-dialog.component';
 
 export type { LiquidacionAlquiler };
 
@@ -571,15 +573,24 @@ export class DashboardClienteComponent implements OnInit {
     return obtenerImagenVehiculo(alq?.vehiculo) || 'images/default-car.png';
   }
 
+  readonly fechaDiaMes = fechaDiaMes;
+
+  private readonly comprobantes = inject(ComprobanteAlquilerService);
+
+  tieneComprobante(a: Alquiler): boolean {
+    return this.comprobantes.tieneComprobante(a, this.esReservaPagada(a));
+  }
+
+  verComprobante(a: Alquiler): void {
+    this.comprobantes.abrir(a);
+  }
+
   abrirDetalleLiquidacion(alquiler: Alquiler): void {
-    this.dialog.open(ActaLiquidacionDialogComponent, {
-      width: '560px',
+    this.dialog.open(DetalleAlquilerDialogComponent, {
+      width: '600px',
       maxWidth: '96vw',
-      panelClass: 'modal-comprobante-dialog',
-      data: {
-        alquiler,
-        pagado: this.esReservaPagada(alquiler)
-      }
+      data: { alquiler },
+      autoFocus: false
     });
   }
 

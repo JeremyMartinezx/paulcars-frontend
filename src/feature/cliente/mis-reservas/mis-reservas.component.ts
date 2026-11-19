@@ -1,10 +1,11 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -15,6 +16,7 @@ import { AuthService } from '../../../core/service/auth.service';
 import { VehiculoService } from '../../../core/service/vehiculo.service';
 import { PagoService } from '../../../core/service/pago.service';
 import { Alquiler } from '../../../core/models/alquiler.model';
+import { fechaDiaMes, formatearFechaHoraCorta } from '../../../core/utils/descarga.util';
 import { obtenerImagenVehiculo } from '../../../core/data/vehiculo-galerias.data';
 import {
   formatearCodigoAlquiler,
@@ -24,7 +26,9 @@ import {
 } from '../../../core/utils/reglas-negocio.util';
 import { PagoAnticipadoDialogComponent } from '../pago-anticipado-dialog/pago-anticipado-dialog.component';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
-import { ActaLiquidacionDialogComponent } from '../../alquileres/acta-liquidacion-dialog/acta-liquidacion-dialog.component';
+import { DevolucionDialogComponent } from '../../../shared/components/devolucion-dialog/devolucion-dialog.component';
+import { ComprobanteAlquilerService } from '../../../core/service/comprobante-alquiler.service';
+import { DetalleAlquilerDialogComponent } from '../../alquileres/detalle-alquiler-dialog/detalle-alquiler-dialog.component';
 
 export type { LiquidacionAlquiler };
 
@@ -37,6 +41,7 @@ export type { LiquidacionAlquiler };
     MatButtonModule,
     MatCardModule,
     MatIconModule,
+    MatMenuModule,
     MatTooltipModule,
     MatDialogModule,
     MatSnackBarModule
@@ -65,10 +70,58 @@ export class MisReservasComponent implements OnInit {
     return f !== 'FINALIZADO' && f !== 'ACTIVO';
   });
 
+
+  private readonly comprobantes = inject(ComprobanteAlquilerService);
+
+  tieneComprobante(a: Alquiler): boolean {
+    return this.comprobantes.tieneComprobante(a, this.esReservaPagada(a));
+  }
+
+  verComprobante(a: Alquiler): void {
+    this.comprobantes.abrir(a);
+  }
+
+  // Detalle de la reserva: cancelada/rechazada → motivo y devolución; el resto → ficha completa con su PDF
+  verDetalle(a: Alquiler): void {
+    if (this.esCancelada(a)) {
+      this.verDetalleCierre(a);
+      return;
+    }
+    this.dialog.open(DetalleAlquilerDialogComponent, {
+      width: '600px',
+      maxWidth: '96vw',
+      data: { alquiler: a },
+      autoFocus: false
+    });
+  }
+
+  private verDetalleCierre(a: Alquiler): void {
+    const ref = this.dialog.open(DevolucionDialogComponent, {
+      width: '560px',
+      maxWidth: '96vw',
+      data: { alquiler: a },
+      autoFocus: false
+    });
+    ref.afterClosed().subscribe((res?: { accion?: string }) => {
+      if (res?.accion === 'ACTUALIZAR') {
+        this.alquilerService.cargarMisAlquileres();
+        this.snackBar.open('Esa reserva ya no está disponible. Se actualizó la lista.', 'Cerrar', { duration: 6000 });
+      }
+    });
+  }
+
+  private readonly destroyRef = inject(DestroyRef);
+
   ngOnInit(): void {
     this.vehiculoService.cargar();
     this.alquilerService.cargarMisAlquileres();
     this.pagoService.cargar();
+
+    // La lista se actualiza sola, así no queda mostrando reservas que ya cambiaron de estado o dejaron de existir
+    const temporizador = setInterval(() => {
+      if (document.visibilityState === 'visible') this.alquilerService.cargarMisAlquileres();
+    }, 30000);
+    this.destroyRef.onDestroy(() => clearInterval(temporizador));
   }
 
   abrirPagoAnticipado(alquiler: Alquiler, modo: 'ALQUILER' | 'DEUDA' = 'ALQUILER'): void {
@@ -80,25 +133,11 @@ export class MisReservasComponent implements OnInit {
 
     ref.afterClosed().subscribe((res) => {
       if (res?.exito) {
-        const metodoNombre = res.metodo === 'YAPE' ? 'Yape'
-          : res.metodo === 'PLIN' ? 'Plin'
-          : res.metodo === 'TARJETA' ? 'Tarjeta de Crédito / Débito'
-          : 'Pasarela Digital';
-
-        this.snackBar.open(
-          `Pago confirmado exitosamente vía ${metodoNombre}`,
-          'Cerrar',
-          {
-            duration: 6000,
-            horizontalPosition: 'center',
-            verticalPosition: 'bottom'
-          }
-        );
-
-        // Actualizar reactivamente todas las listas y alquileres sin recargar la página
+        // La pantalla "¡Pago Aprobado con Éxito!" ya confirmó el pago: aquí solo se actualizan las listas sin recargar la página
         this.alquilerService.cargarMisAlquileres();
         this.alquilerService.cargar();
         this.pagoService.cargar();
+        this.snackBar.open('Pago registrado correctamente.', 'Cerrar', { duration: 4000 });
       }
     });
   }
@@ -190,12 +229,21 @@ export class MisReservasComponent implements OnInit {
     this.misAlquileres().filter((a) => this.esFinalizadoConDeuda(a)).length
   );
 
+  // Canceladas (por el cliente, por la empresa o por falta de pago) y rechazadas: todo lo que ya no sigue su curso
+  esCancelada(a: Alquiler): boolean {
+    const e = (a.estado?.nombreEstado || '').toUpperCase();
+    return e === 'CANCELADO' || e === 'CANCELADO_SIN_STOCK' || e === 'RECHAZADO' || e === 'RECHAZADO_DOCUMENTACION';
+  }
+
+  readonly conteoCanceladas = computed(() => this.misAlquileres().filter((a) => this.esCancelada(a)).length);
+
   readonly reservasFinalizadas = this.conteoFinalizadasTotal;
   readonly conteoFinalizadas = this.conteoFinalizadasTotal;
   readonly conteoConDeuda = this.conteoFinalizadasConDeuda;
 
   readonly soloHoy = signal<boolean>(false);
-  readonly ordenModo = signal<'INTELIGENTE' | 'REGISTRO'>('INTELIGENTE');
+  // Lo más reciente primero: la reserva que el cliente acaba de crear aparece arriba
+  readonly ordenModo = signal<'INTELIGENTE' | 'REGISTRO'>('REGISTRO');
 
   fechaHoyStr(): string {
     const now = new Date();
@@ -242,10 +290,17 @@ export class MisReservasComponent implements OnInit {
     this.paginaActual.set(1);
   }
 
-  toggleOrden(): void {
-    this.ordenModo.update((m) => (m === 'INTELIGENTE' ? 'REGISTRO' : 'INTELIGENTE'));
+  cambiarOrden(modo: 'INTELIGENTE' | 'REGISTRO'): void {
+    this.ordenModo.set(modo);
     this.paginaActual.set(1);
   }
+
+  readonly textoOrden = computed(() => (this.ordenModo() === 'REGISTRO' ? 'Más recientes' : 'Próximas a recoger'));
+
+  // Periodo y registro en formato corto para que la tabla no abrume
+  readonly fechaDiaMes = fechaDiaMes;
+  readonly fechaHoraCorta = formatearFechaHoraCorta;
+
 
   readonly alquileresFiltrados = computed(() => {
     const f = this.filtroEstado();
@@ -290,6 +345,8 @@ export class MisReservasComponent implements OnInit {
           }
           return true;
         });
+      } else if (f === 'CANCELADO') {
+        lista = lista.filter((a) => this.esCancelada(a));
       } else if (f === 'DEUDA') {
         lista = lista.filter((a) => this.esFinalizadoConDeuda(a));
       } else {
@@ -460,18 +517,6 @@ export class MisReservasComponent implements OnInit {
 
   obtenerLiquidacion(alquiler: Alquiler): LiquidacionAlquiler {
     return obtenerLiquidacionAlquiler(alquiler);
-  }
-
-  abrirModalLiquidacion(alquiler: Alquiler): void {
-    this.dialog.open(ActaLiquidacionDialogComponent, {
-      width: '560px',
-      maxWidth: '96vw',
-      panelClass: 'modal-comprobante-dialog',
-      data: {
-        alquiler,
-        pagado: this.esReservaPagada(alquiler)
-      }
-    });
   }
 
   cerrarModalLiquidacion(): void {
@@ -703,7 +748,7 @@ export class MisReservasComponent implements OnInit {
       if (!confirmado) return;
       this.alquilerService.cancelar(alq.idAlquiler!).subscribe({
         next: () => {
-          this.snackBar.open('Tu solicitud de reserva ha sido cancelada.', 'Cerrar', { duration: 4000 });
+          this.snackBar.open('Solicitud cancelada correctamente.', 'Cerrar', { duration: 4000 });
           this.alquilerService.cargarMisAlquileres();
           this.vehiculoService.cargar();
         },
