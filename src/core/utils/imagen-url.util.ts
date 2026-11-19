@@ -16,9 +16,7 @@ const MAPA_IMAGENES_LOCALES: Record<string, string> = {
 
 const ASSET_VERSION = 'v=pc2';
 
-// Las fotos subidas por el admin viven en el backend (/uploads/...).
-// Las del catálogo inicial viven en el frontend (/images/...) o en internet (https://...).
-// Esta función arma la URL correcta para el <img>.
+
 export function resolverUrlImagen(url?: string | null): string {
   if (!url) return '';
   const trimmed = url.trim();
