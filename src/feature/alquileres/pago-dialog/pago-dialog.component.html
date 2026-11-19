@@ -1,11 +1,11 @@
 <header class="modal-header">
   <div class="modal-header-left">
     <div class="modal-header-icon">
-      <mat-icon>{{ esDeuda ? 'paid' : 'key' }}</mat-icon>
+      <mat-icon>{{ esDeuda ? 'paid' : 'receipt_long' }}</mat-icon>
     </div>
     <div class="modal-header-text">
       <h2 mat-dialog-title class="titulo">
-        {{ esDeuda ? 'Pago de Deuda por Liquidación' : 'Registrar Pago y Entrega de Llaves' }}
+        {{ esDeuda ? 'Pago de Deuda por Liquidación' : 'Registrar Pago del Alquiler' }}
       </h2>
       <div class="subtitulo">
       <span class="codigo-alquiler">{{ formatearCodigoAlquiler(data.alquiler.idAlquiler) }}</span>
@@ -67,7 +67,7 @@
 
   <form [formGroup]="form" class="pago-form">
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Método de pago con el que cancela el cliente</mat-label>
+      <mat-label>Método de pago</mat-label>
       <mat-select
         formControlName="idMetodoPago"
         (selectionChange)="cambiarMetodo($event.value)"
@@ -122,6 +122,33 @@
           >
           @if (form.controls.numeroOperacion.invalid && form.controls.numeroOperacion.touched) {
             <mat-error>Ingresa los 6 dígitos del voucher.</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Marca de la tarjeta</mat-label>
+          <mat-select formControlName="marcaTarjeta">
+            <mat-option value="VISA">Visa</mat-option>
+            <mat-option value="MASTERCARD">Mastercard</mat-option>
+            <mat-option value="AMEX">American Express</mat-option>
+            <mat-option value="DINERS">Diners Club</mat-option>
+            <mat-option value="OTRA">Otra</mat-option>
+          </mat-select>
+          @if (form.controls.marcaTarjeta.invalid && form.controls.marcaTarjeta.touched) {
+            <mat-error>Selecciona la marca.</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>N.° de autorización</mat-label>
+          <input
+            matInput
+            formControlName="numeroAutorizacion"
+            maxlength="12"
+            placeholder="Ej: A1B2C3"
+            autocomplete="off"
+            (input)="onAutorizacion($event)"
+          >
+          @if (form.controls.numeroAutorizacion.invalid && form.controls.numeroAutorizacion.touched) {
+            <mat-error>Ingresa de 4 a 12 letras o números.</mat-error>
           }
         </mat-form-field>
       </div>
@@ -237,7 +264,7 @@
     (click)="confirmar()"
     [disabled]="cargando || cargandoSaldo || form.invalid || efectivoInsuficiente || totalSugerido <= 0"
   >
-    <mat-icon>{{ esDeuda ? 'paid' : 'key' }}</mat-icon>
-    {{ cargando ? 'Registrando...' : (esDeuda ? 'Registrar Pago de Deuda' : 'Confirmar Pago y Entregar Llaves') }}
+    <mat-icon>{{ esDeuda ? 'paid' : 'receipt_long' }}</mat-icon>
+    {{ cargando ? 'Registrando...' : (esDeuda ? 'Registrar Pago de Deuda' : 'Confirmar pago') }}
   </button>
 </mat-dialog-actions>

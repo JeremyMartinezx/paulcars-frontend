@@ -9,6 +9,8 @@ import { MOTIVOS_RECHAZO, formatearCodigoAlquiler } from '../../../core/utils/re
 
 export interface RechazoReservaData {
   alquiler: Alquiler;
+  /** Si el cliente ya tuvo alquileres: solo entonces puede tener obligaciones pendientes. */
+  tuvoAlquileres?: boolean;
 }
 
 @Component({
@@ -23,7 +25,8 @@ export class RechazoReservaDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<RechazoReservaDialogComponent, RechazoReservaRequest>);
 
   readonly formatearCodigoAlquiler = formatearCodigoAlquiler;
-  readonly motivos = MOTIVOS_RECHAZO;
+  // «Obligaciones pendientes de un alquiler anterior» no se ofrece a un cliente nuevo
+  readonly motivos = MOTIVOS_RECHAZO.filter((m) => m.valor !== 'HISTORIAL_NEGATIVO' || this.data.tuvoAlquileres !== false);
   readonly motivoSeleccionado = signal<MotivoRechazo | null>(null);
 
   observaciones = '';

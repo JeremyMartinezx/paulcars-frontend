@@ -1,0 +1,70 @@
+<header class="dv-cabecera">
+  <div class="dv-icono"><mat-icon>event_busy</mat-icon></div>
+  <div class="dv-titulo">
+    <h2 mat-dialog-title>{{ esPersonal ? (esRechazo ? 'Detalle de la solicitud' : 'Detalle de la cancelación') : 'Detalle de tu reserva' }}</h2>
+    <span>{{ codigo }}@if (esPersonal && clienteNombre) { &bull; {{ clienteNombre }} }</span>
+  </div>
+  <button mat-icon-button type="button" class="dv-cerrar" (click)="cerrar()" aria-label="Cerrar">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<mat-dialog-content class="dv-cuerpo">
+  <!-- Por qué quedó así -->
+  @if (motivo) {
+    <section class="dv-motivo">
+      <span class="dv-etiqueta">{{ esRechazo ? 'Solicitud no aprobada' : 'Reserva cancelada' }}</span>
+      <strong>{{ motivo.titulo }}</strong>
+      @if (motivo.detalle) {
+        <p>{{ motivo.detalle }}</p>
+      }
+      @if (fechaCierre) {
+        <small>{{ fechaHora(fechaCierre) }}</small>
+      }
+    </section>
+  }
+
+  @if (cargando()) {
+    <p class="dv-nota">Cargando...</p>
+  }
+
+  <!-- Devolución de dinero (solo si hubo pago) -->
+  @if (dev(); as d) {
+    @if (d.montoPagado > 0) {
+      <h3 class="dv-sub">Devolución de dinero</h3>
+
+      <section class="dv-motivo">
+        <span class="dv-etiqueta">{{ etiquetaDevolucion(d) }}</span>
+        <strong>{{ tituloDevolucion(d) }}</strong>
+        <p>{{ textoDevolucion(d) }}</p>
+
+        <dl class="dv-detalle dv-dentro">
+          <div><dt>Monto pagado</dt><dd>S/ {{ d.montoPagado | number:'1.2-2' }}</dd></div>
+          @if (d.montoRetenido > 0) {
+            <div><dt>Monto retenido</dt><dd>S/ {{ d.montoRetenido | number:'1.2-2' }}</dd></div>
+          }
+          @if (d.metodos) {
+            <div><dt>Método de pago</dt><dd>{{ d.metodos }}</dd></div>
+          }
+        </dl>
+      </section>
+
+      <h3 class="dv-sub">Comprobantes</h3>
+      <div class="dv-notas">
+        <button type="button" class="dv-nota-btn" (click)="verComprobantes(d)">
+          <mat-icon>description</mat-icon>
+          <span>{{ d.notasCredito.length > 0 ? 'Boleta de venta y nota de crédito' : 'Boleta de venta' }}</span>
+          <mat-icon class="ver">visibility</mat-icon>
+        </button>
+      </div>
+    }
+  }
+
+  @if (error()) {
+    <div class="dv-aviso error"><mat-icon>error_outline</mat-icon><span>{{ error() }}</span></div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dv-acciones">
+  <button mat-button type="button" (click)="cerrar()">Cerrar</button>
+</mat-dialog-actions>

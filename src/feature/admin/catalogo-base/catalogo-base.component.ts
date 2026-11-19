@@ -3,6 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
 
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -14,6 +16,10 @@ import { Catalogos } from '../../../core/models/catalogo.model';
 import { CatalogoService } from '../../../core/service/catalogo.service';
 import { AuthService } from '../../../core/service/auth.service';
 import { BackButtonComponent } from '../../../shared/components/back-button/back-button.component';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData
+} from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 type TipoCatalogo = 'marca' | 'tipo' | 'combustible';
 
@@ -34,6 +40,7 @@ interface EdicionModelo {
     MatSelectModule,
     MatSnackBarModule,
     MatTabsModule,
+    MatTooltipModule,
     BackButtonComponent
   ],
   templateUrl: './catalogo-base.component.html',
@@ -45,9 +52,11 @@ export class CatalogoBaseComponent implements OnInit {
   readonly esAdmin = computed(() => this.authService.rolActual() === 'ADMIN');
 
   private readonly catalogoService = inject(CatalogoService);
+  private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
   catalogos: Catalogos | null = null;
+  private readonly datos = signal<Catalogos | null>(null);
 
   nuevaMarca = '';
   nuevoTipo = '';
@@ -63,7 +72,7 @@ export class CatalogoBaseComponent implements OnInit {
 
   readonly marcasFiltradas = computed(() => {
     const q = this.busqueda().trim().toLowerCase();
-    const lista = this.catalogos?.marcas || [];
+    const lista = this.datos()?.marcas || [];
     if (!q) return lista;
     return lista.filter((m) => m.nombreMarca.toLowerCase().includes(q));
   });
@@ -71,7 +80,8 @@ export class CatalogoBaseComponent implements OnInit {
   readonly modelosFiltrados = computed(() => {
     const q = this.busqueda().trim().toLowerCase();
     const filtroMarca = this.filtroMarcaModelo();
-    let lista = this.catalogos?.modelos || [];
+    // Los modelos más nuevos primero
+    let lista = [...(this.datos()?.modelos || [])].sort((a, b) => b.idModelo - a.idModelo);
 
     if (filtroMarca !== 'TODAS') {
       lista = lista.filter((m) => m.marca?.idMarca === filtroMarca);
@@ -85,14 +95,14 @@ export class CatalogoBaseComponent implements OnInit {
 
   readonly tiposFiltrados = computed(() => {
     const q = this.busqueda().trim().toLowerCase();
-    const lista = this.catalogos?.tiposVehiculo || [];
+    const lista = this.datos()?.tiposVehiculo || [];
     if (!q) return lista;
     return lista.filter((t) => t.nombreTipo.toLowerCase().includes(q));
   });
 
   readonly combustiblesFiltrados = computed(() => {
     const q = this.busqueda().trim().toLowerCase();
-    const lista = this.catalogos?.combustibles || [];
+    const lista = this.datos()?.combustibles || [];
     if (!q) return lista;
     return lista.filter((c) => c.nombreCombustible.toLowerCase().includes(q));
   });
@@ -103,7 +113,10 @@ export class CatalogoBaseComponent implements OnInit {
 
   private cargarCatalogos(): void {
     this.catalogoService.obtenerTodos().subscribe({
-      next: (data) => (this.catalogos = data),
+      next: (data) => {
+        this.catalogos = data;
+        this.datos.set(data); // las listas filtradas se recalculan al instante
+      },
       error: (err) => {
         console.error('Error cargando catálogos:', err);
         this.snackBar.open('No se pudo cargar el catálogo', 'Cerrar', { duration: 5000 });
@@ -199,6 +212,26 @@ export class CatalogoBaseComponent implements OnInit {
         this.snackBar.open('Modelo actualizado correctamente', 'Cerrar', { duration: 5000 });
       },
       error: (err) => this.mostrarError(err)
+    });
+  }
+
+  // Borrar un valor del catálogo: pide confirmación y el sistema solo lo permite si nadie lo usa
+  eliminar(ruta: 'marcas' | 'modelos' | 'tipos-vehiculo' | 'combustibles', id: number, nombre: string): void {
+    const etiqueta = ruta === 'marcas' ? 'la marca' : ruta === 'modelos' ? 'el modelo' : ruta === 'tipos-vehiculo' ? 'la categoría' : 'el combustible';
+    const data: ConfirmDialogData = {
+      titulo: 'Eliminar del catálogo',
+      mensaje: `¿Seguro que desea eliminar ${etiqueta} ${nombre}? Esta acción no se puede deshacer.`
+    };
+    const ref = this.dialog.open(ConfirmDialogComponent, { data, width: '420px', autoFocus: false });
+    ref.afterClosed().subscribe((confirmado) => {
+      if (!confirmado) return;
+      this.catalogoService.eliminar(ruta, id).subscribe({
+        next: () => {
+          this.cargarCatalogos();
+          this.snackBar.open('Eliminado correctamente', 'Cerrar', { duration: 4000 });
+        },
+        error: (err) => this.mostrarError(err)
+      });
     });
   }
 

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Injectable, inject, signal } from '@angular/core';
+import { huboCambios } from '../utils/comparar.util';
 import { Observable, tap } from 'rxjs';
 
 import { Cliente } from '../models/cliente.model';
@@ -29,9 +30,10 @@ export class ClienteService {
 
   cargar(): void {
     this.http.get<Cliente[]>(this.apiUrl).subscribe({
-      next: (data) => this.clientesSignal.set(
-        [...data].sort((a, b) => (b.idCliente ?? 0) - (a.idCliente ?? 0))
-      ),
+      next: (data) => {
+        const lista = [...data].sort((a, b) => (b.idCliente ?? 0) - (a.idCliente ?? 0));
+        if (huboCambios(this.clientesSignal(), lista)) this.clientesSignal.set(lista);
+      },
       error: (err) => console.error('Error cargando clientes:', err)
     });
   }
@@ -82,7 +84,7 @@ export class ClienteService {
     );
   }
 
-  // Bloqueo / desbloqueo (solo administrador) - Normalizado a ACTIVO o LISTA_NEGRA
+  
   cambiarEstado(id: number, estado: 'ACTIVO' | 'LISTA_NEGRA' | string): Observable<Cliente> {
     return this.http.put<Cliente>(`${this.apiUrl}/${id}/estado`, null, { params: { estado } }).pipe(
       tap(() => this.cargar())

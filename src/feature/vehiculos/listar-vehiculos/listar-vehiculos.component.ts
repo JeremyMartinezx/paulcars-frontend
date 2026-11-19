@@ -202,8 +202,8 @@ export class ListarVehiculosComponent implements OnInit {
 
       this.vehiculoService.agregar(resultado).subscribe({
         next: () => {
-          
           this.paginaActual.set(1);
+          this.snackBar.open('Vehículo registrado correctamente.', 'Cerrar', { duration: 3000 });
         },
         error: (err) => {
           this.snackBar.open(err?.error?.message || 'Error al registrar el modelo', 'Cerrar', { duration: 5000 });
@@ -222,7 +222,10 @@ export class ListarVehiculosComponent implements OnInit {
       if (!resultado) return;
 
       this.vehiculoService.actualizar(vehiculo.idVehiculo!, resultado).subscribe({
-        next: () => this.vehiculoService.cargar(),
+        next: () => {
+          this.vehiculoService.cargar();
+          this.snackBar.open('Vehículo actualizado correctamente.', 'Cerrar', { duration: 3000 });
+        },
         error: (err) => {
           this.snackBar.open(err?.error?.message || 'Error al actualizar el vehículo', 'Cerrar', { duration: 5000 });
         }
@@ -246,7 +249,10 @@ export class ListarVehiculosComponent implements OnInit {
       if (!confirmado) return;
 
       this.vehiculoService.eliminar(vehiculo.idVehiculo!).subscribe({
-        next: () => this.vehiculoService.cargar(),
+        next: () => {
+          this.vehiculoService.cargar();
+          this.snackBar.open('Vehículo eliminado.', 'Cerrar', { duration: 3000 });
+        },
         error: (err) => {
           this.snackBar.open(err?.error?.message || 'Error al eliminar el modelo', 'Cerrar', { duration: 5000 });
         }
@@ -300,7 +306,7 @@ export class ListarVehiculosComponent implements OnInit {
         estado: { idEstado: nuevoIdEstado, nombreEstado: nuevoEstado } as any
       }).subscribe({
         next: () => {
-          this.snackBar.open(`Modelo ${nombreModelo}: marcado como ${nuevoEstado}`, 'OK', { duration: 3000 });
+          this.snackBar.open('Estado actualizado correctamente.', 'OK', { duration: 3000 });
           this.vehiculoService.cargar();
         },
         error: (err) => {

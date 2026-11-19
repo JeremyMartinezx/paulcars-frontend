@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Injectable, inject, signal } from '@angular/core';
+import { huboCambios } from '../utils/comparar.util';
 import { Observable, tap } from 'rxjs';
 
 import { Vehiculo, VehiculoUnidad } from '../models/vehiculo.model';
@@ -15,19 +16,34 @@ export class VehiculoService {
   private readonly vehiculosSignal = signal<Vehiculo[]>([]);
   readonly vehiculos = this.vehiculosSignal.asReadonly();
 
+  // La última sede pedida: el refresco automático vuelve a cargar la misma lista que se está viendo
+  private ultimaSede?: string;
+
   cargar(sede?: string): void {
+    this.ultimaSede = sede;
     const params = sede && sede !== 'TODAS' ? `?sede=${encodeURIComponent(sede)}` : '';
     this.http.get<Vehiculo[]>(`${this.apiUrl}${params}`).subscribe({
-      next: (data) => this.vehiculosSignal.set(
-        [...data].sort((a, b) => (b.idVehiculo ?? 0) - (a.idVehiculo ?? 0))
-      ),
+      next: (data) => {
+        const lista = [...data].sort((a, b) => (b.idVehiculo ?? 0) - (a.idVehiculo ?? 0));
+        if (huboCambios(this.vehiculosSignal(), lista)) this.vehiculosSignal.set(lista);
+      },
       error: (err) => console.error('Error cargando vehículos:', err)
     });
+  }
+
+  recargar(): void {
+    this.cargar(this.ultimaSede);
   }
 
   listarTodos(sede?: string): Observable<Vehiculo[]> {
     const params = sede && sede !== 'TODAS' ? `?sede=${encodeURIComponent(sede)}` : '';
     return this.http.get<Vehiculo[]>(`${this.apiUrl}${params}`);
+  }
+
+  /** Unidades libres por modelo y sede para las fechas (ISO yyyy-MM-dd); sin fechas, hoy y mañana. */
+  disponibilidadSedes(inicio?: string, fin?: string): Observable<Record<string, Record<string, number>>> {
+    const q = [inicio ? `inicio=${inicio}` : '', fin ? `fin=${fin}` : ''].filter(Boolean).join('&');
+    return this.http.get<Record<string, Record<string, number>>>(`${this.apiUrl}/disponibilidad-sedes${q ? '?' + q : ''}`);
   }
 
   obtenerPorId(id: number): Observable<Vehiculo> {
@@ -52,14 +68,14 @@ export class VehiculoService {
     );
   }
 
-  // Sube una foto y devuelve su URL pública (/uploads/vehiculos/xxx.jpg)
+
   subirImagen(archivo: File): Observable<{ url: string }> {
     const formData = new FormData();
     formData.append('archivo', archivo);
     return this.http.post<{ url: string }>(`${this.apiUrl}/imagenes`, formData);
   }
 
-  // ===== Gestión de Unidades Físicas (Flota en Patio) =====
+
   obtenerUnidades(idModelo: number): Observable<VehiculoUnidad[]> {
     return this.http.get<VehiculoUnidad[]>(`${this.apiUrl}/${idModelo}/unidades`);
   }

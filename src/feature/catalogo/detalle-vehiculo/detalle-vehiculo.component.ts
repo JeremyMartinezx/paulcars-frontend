@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -82,6 +82,30 @@ export class DetalleVehiculoComponent implements OnInit {
   readonly horaEntrega = signal<string>('10:00');
 
   readonly fechaDevolucion = signal<string>('');
+
+  /** Unidades libres de este vehículo por sede para las fechas elegidas. */
+  readonly dispSedes = signal<Record<string, number>>({});
+  private readonly cargarDisponibilidad = effect(() => {
+    const id = this.vehiculoId();
+    const ini = this.fechaEntrega();
+    const fin = this.fechaDevolucion();
+    if (!id || !ini || !fin) { this.dispSedes.set({}); return; }
+    this.vehiculoService.disponibilidadSedes(ini, fin).subscribe({
+      next: (m) => {
+        const d = m[String(id)] || {};
+        this.dispSedes.set(d);
+        const actual = this.sedeRecojo();
+        const otra = actual === 'AEROPUERTO' ? 'MIRAFLORES' : 'AEROPUERTO';
+        if (d[actual] !== undefined && d[actual] <= 0 && (d[otra] ?? 0) > 0) this.onSedeRecojoChange(otra);
+      },
+      error: () => this.dispSedes.set({})
+    });
+  });
+
+  sinStockSede(sede: string): boolean {
+    const d = this.dispSedes();
+    return d[sede] !== undefined && d[sede] <= 0;
+  }
   readonly horaDevolucion = signal<string>('10:00');
 
   readonly errorHorario = signal<string | null>(null);
@@ -263,6 +287,7 @@ export class DetalleVehiculoComponent implements OnInit {
   readonly colorVisual = computed(() => {
     const v = this.vehiculo();
     if (!v) return 'Gris Plata';
+    if (v.color && !v.color.includes('/')) return v.color;
     const mod = (v.modelo?.modelo || v.nombreModelo || '').toLowerCase();
     if (mod.includes('swift')) return 'Amarillo Deportivo';
     if (mod.includes('mazda 3') || mod === '3') return 'Gris Polymetal';

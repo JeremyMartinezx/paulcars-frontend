@@ -12,6 +12,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { AuthService } from '../../../core/service/auth.service';
 import { AlquilerService } from '../../../core/service/alquiler.service';
 import { ClienteService } from '../../../core/service/cliente.service';
+import { ActualizacionEnVivoService } from '../../../core/service/actualizacion-en-vivo.service';
 import { NotificacionService } from '../../../core/service/notificacion.service';
 import { motivoRechazoLegible } from '../../../core/utils/reglas-negocio.util';
 
@@ -109,6 +110,9 @@ export class HeaderComponent implements OnInit {
     return url === '/reservar' || url.startsWith('/reservar/');
   });
 
+  // Mantiene al día las listas del personal (alquileres, pagos, clientes, vehículos, usuarios)
+  private readonly actualizacionEnVivo = inject(ActualizacionEnVivoService);
+
   constructor() {
     // La campana en vivo corre para todos los usuarios autenticados (cliente, asesor, admin) desde el backend
     effect(() => {
@@ -199,10 +203,26 @@ export class HeaderComponent implements OnInit {
         icono = 'event_available';
         badgeTexto = 'RECOJO HOY';
         tipoItem = 'aprobado';
+      } else if (tipoApi === 'BIENVENIDA') {
+        icono = 'waving_hand';
+        badgeTexto = 'BIENVENIDA';
+        tipoItem = 'info';
+      } else if (tipoApi === 'RECOJO_CLIENTE') {
+        icono = 'event_available';
+        badgeTexto = 'RECOJO';
+        tipoItem = 'aprobado';
       } else if (tipoApi === 'RESERVA_APROBADA') {
         icono = 'check_circle';
         badgeTexto = 'APROBADA';
         tipoItem = 'aprobado';
+      } else if (tipoApi === 'DANOS_EN_EVALUACION') {
+        icono = 'car_crash';
+        badgeTexto = 'EN EVALUACIÓN';
+        tipoItem = 'info';
+      } else if (tipoApi === 'DANOS_PENDIENTES') {
+        icono = 'fact_check';
+        badgeTexto = 'EVALUAR DAÑOS';
+        tipoItem = 'recordatorio';
       } else if (tipoApi === 'ALQUILER_FINALIZADO') {
         icono = 'verified';
         badgeTexto = 'GARANTIA LIBERADA';
@@ -226,6 +246,18 @@ export class HeaderComponent implements OnInit {
       } else if (tipoApi === 'RECORDATORIO_DEVOLUCION') {
         icono = 'car_crash';
         badgeTexto = 'CHECK-OUT';
+        tipoItem = 'recordatorio';
+      } else if (tipoApi === 'REEMBOLSO_EN_TRAMITE') {
+        icono = 'currency_exchange';
+        badgeTexto = 'DEVOLUCIÓN EN TRÁMITE';
+        tipoItem = 'info';
+      } else if (tipoApi === 'REEMBOLSO_REALIZADO') {
+        icono = 'currency_exchange';
+        badgeTexto = 'DEVOLUCIÓN REALIZADA';
+        tipoItem = 'aprobado';
+      } else if (tipoApi === 'RESERVA_CANCELADA') {
+        icono = 'event_busy';
+        badgeTexto = 'CANCELADA';
         tipoItem = 'recordatorio';
       } else if (tipoApi === 'ACTUALIZA_PERFIL') {
         icono = 'manage_accounts';
@@ -292,6 +324,7 @@ export class HeaderComponent implements OnInit {
     }
 
     if ((n.tipoApi as string) === 'ACTUALIZA_PERFIL') { this.router.navigate(['/cliente/perfil']); return; }
+    if ((n.tipoApi as string) === 'BIENVENIDA') { this.router.navigate(['/catalogo']); return; }
     this.router.navigate(['/cliente/reservas']);
   }
 

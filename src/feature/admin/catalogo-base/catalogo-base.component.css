@@ -122,7 +122,7 @@
 
 .barra-agregar.grid-modelo {
   display: grid;
-  grid-template-columns: 1.5fr 1fr auto;
+  grid-template-columns: 1fr 1.5fr auto;
   margin-bottom: 16px;
 }
 
@@ -271,4 +271,12 @@
   .barra-agregar.grid-modelo {
     grid-template-columns: 1fr;
   }
+}
+
+.btn-delete {
+  color: #94a3b8;
+}
+
+.btn-delete:hover {
+  color: #b91c1c;
 }

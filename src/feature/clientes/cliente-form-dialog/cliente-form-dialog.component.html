@@ -77,6 +77,19 @@
           }
         </mat-form-field>
       </div>
+
+      <div class="grid-2">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" hideRequiredMarker class="campo-ancho">
+          <mat-label>Dirección</mat-label>
+          <input matInput formControlName="direccion" placeholder="Av. Arequipa 1450, Lince" autocomplete="off">
+          @if (form.controls.direccion.hasError('required') && form.controls.direccion.touched) {
+            <mat-error>La dirección es obligatoria.</mat-error>
+          }
+          @if (form.controls.direccion.hasError('minlength') && form.controls.direccion.touched) {
+            <mat-error>Ingrese la dirección completa.</mat-error>
+          }
+        </mat-form-field>
+      </div>
     </mat-dialog-content>
 
     <mat-dialog-actions align="end" class="dialog-actions">

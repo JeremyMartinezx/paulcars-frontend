@@ -147,3 +147,7 @@ mat-form-field {
     grid-template-columns: 1fr;
   }
 }
+
+.campo-ancho {
+  grid-column: 1 / -1;
+}

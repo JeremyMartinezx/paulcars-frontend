@@ -50,7 +50,8 @@ export class ClienteFormDialogComponent implements OnInit {
     licenciaConducir: [
       this.data?.cliente?.licenciaConducir ?? '',
       [Validators.required, Validators.pattern(/^[A-Za-z]\d{8}$/)]
-    ]
+    ],
+    direccion: [this.data?.cliente?.direccion ?? '', [Validators.required, Validators.minLength(5)]]
   });
 
   ngOnInit(): void {
@@ -80,7 +81,8 @@ export class ClienteFormDialogComponent implements OnInit {
       numeroDocumento: docLimpio,
       telefono: valor.telefono.trim(),
       email: valor.email.trim(),
-      licenciaConducir: valor.licenciaConducir.trim().toUpperCase()
+      licenciaConducir: valor.licenciaConducir.trim().toUpperCase(),
+      direccion: valor.direccion.trim()
     };
 
     if (!this.esEdicion) {

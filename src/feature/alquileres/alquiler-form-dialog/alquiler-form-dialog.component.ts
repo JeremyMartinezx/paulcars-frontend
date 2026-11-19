@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 
@@ -103,6 +103,31 @@ export class AlquilerFormDialogComponent implements OnInit {
   readonly fechaInicioSig = signal<string>('');
   readonly horaRecojoSig = signal<string>('10:00');
   readonly fechaFinSig = signal<string>('');
+
+  /** Unidades libres del vehículo elegido por sede para las fechas elegidas (vacío = aún no se sabe). */
+  readonly dispSedes = signal<Record<string, number>>({});
+  private readonly cargarDisponibilidad = effect(() => {
+    const id = this.vehiculoSeleccionadoId();
+    const ini = this.fechaInicioSig();
+    const fin = this.fechaFinSig();
+    if (!id || !ini || !fin) { this.dispSedes.set({}); return; }
+    this.vehiculoService.disponibilidadSedes(ini, fin).subscribe({
+      next: (m) => {
+        const d = m[String(id)] || {};
+        this.dispSedes.set(d);
+        const otra = this.sedeRecojoSig() === 'AEROPUERTO' ? 'MIRAFLORES' : 'AEROPUERTO';
+        if (d[this.sedeRecojoSig()] !== undefined && d[this.sedeRecojoSig()] <= 0 && (d[otra] ?? 0) > 0) {
+          this.seleccionarSedeRecojo(otra);
+        }
+      },
+      error: () => this.dispSedes.set({})
+    });
+  });
+
+  sinStockSede(sede: string): boolean {
+    const d = this.dispSedes();
+    return d[sede] !== undefined && d[sede] <= 0;
+  }
   readonly horaDevolucionSig = signal<string>('10:00');
   readonly dropdownAbierto = signal<DropdownTipo>(null);
 

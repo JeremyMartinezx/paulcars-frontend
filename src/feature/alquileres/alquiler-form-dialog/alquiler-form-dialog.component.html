@@ -234,19 +234,21 @@
                         class="custom-dropdown-item branch-item-col"
                         role="option"
                         [class.selected]="sedeRecojoSig() === 'MIRAFLORES'"
-                        (click)="seleccionarSedeRecojo('MIRAFLORES', $event)"
+                        [class.disabled]="sinStockSede('MIRAFLORES')"
+                        (click)="sinStockSede('MIRAFLORES') ? $event.stopPropagation() : seleccionarSedeRecojo('MIRAFLORES', $event)"
                       >
                         <span class="item-name">Miraflores - Av. 28 de Julio 489</span>
-                        <span class="item-schedule">(Lun-Vie: 8:30-18:00 Sáb: 9:00-17:00)</span>
+                        <span class="item-schedule">{{ sinStockSede('MIRAFLORES') ? 'Sin vehículos disponibles en esta sede para esas fechas' : '(Lun-Vie: 8:30-18:00 Sáb: 9:00-17:00)' }}</span>
                       </li>
                       <li
                         class="custom-dropdown-item branch-item-col"
                         role="option"
                         [class.selected]="sedeRecojoSig() === 'AEROPUERTO'"
-                        (click)="seleccionarSedeRecojo('AEROPUERTO', $event)"
+                        [class.disabled]="sinStockSede('AEROPUERTO')"
+                        (click)="sinStockSede('AEROPUERTO') ? $event.stopPropagation() : seleccionarSedeRecojo('AEROPUERTO', $event)"
                       >
                         <span class="item-name">Aeropuerto Internacional Jorge Chávez</span>
-                        <span class="item-schedule">(Atención 24 horas)</span>
+                        <span class="item-schedule">{{ sinStockSede('AEROPUERTO') ? 'Sin vehículos disponibles en esta sede para esas fechas' : '(Atención 24 horas)' }}</span>
                       </li>
                     </ul>
                   }

@@ -1,0 +1,178 @@
+<header class="modal-header">
+  <div class="modal-header-left">
+    <div class="modal-header-icon">
+      <mat-icon>{{ entregado() ? 'task_alt' : 'key' }}</mat-icon>
+    </div>
+    <div class="modal-header-text">
+      <h2 mat-dialog-title class="titulo">
+        {{ entregado() ? 'Entrega registrada' : 'Acta de entrega del vehículo' }}
+      </h2>
+      <div class="subtitulo">
+        <span>{{ formatearCodigoAlquiler(alquiler.idAlquiler) }}</span>
+        <span class="sep">&bull;</span>
+        <span>{{ nombreVehiculo() }}</span>
+        @if (placa()) {
+          <span class="sep">&bull;</span>
+          <span>{{ placa() }}</span>
+        }
+      </div>
+    </div>
+  </div>
+  <button mat-icon-button type="button" class="btn-cerrar" (click)="cerrar()" aria-label="Cerrar">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<mat-dialog-content class="dialog-content">
+  @if (entregado()) {
+    <!-- ───── Entrega confirmada ───── -->
+    <div class="exito-card">
+      <mat-icon class="exito-ic">check_circle</mat-icon>
+      <h3>Llaves entregadas a {{ clienteNombre() }}</h3>
+      <p>
+        El contrato pasó a <strong>En ruta</strong> y el vehículo quedó registrado como en circulación.
+      </p>
+    </div>
+    @if (error()) {
+      <div class="alerta-error">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ error() }}</span>
+      </div>
+    }
+  } @else {
+    <!-- ───── 1. Cliente ───── -->
+    <section class="bloque">
+      <h3 class="bloque-titulo"><span class="num">1</span> Cliente</h3>
+      <div class="resumen-grid">
+        <div><span class="lbl">Titular</span><strong>{{ clienteNombre() }}</strong></div>
+        <div><span class="lbl">DNI</span><strong>{{ alquiler.cliente.numeroDocumento || '—' }}</strong></div>
+        <div><span class="lbl">Licencia</span><strong>{{ alquiler.cliente.licenciaConducir || '—' }}</strong></div>
+      </div>
+    </section>
+
+    <!-- ───── 2. Datos de la entrega ───── -->
+    <section class="bloque">
+      <h3 class="bloque-titulo"><span class="num">2</span> Datos de la entrega</h3>
+      <dl class="datos-entrega">
+        <div>
+          <dt>Hora de entrega</dt>
+          <dd>
+            <strong>{{ horas().entrega }}</strong>
+          </dd>
+        </div>
+        <div>
+          <dt>Hora de devolución</dt>
+          <dd>
+            <strong>{{ horas().devolucion }}</strong>
+          </dd>
+        </div>
+        <div class="fila-control">
+          <dt>Kilometraje de salida</dt>
+          <dd>
+            <span class="km-wrap">
+              <input
+                id="kmSalida"
+                type="number"
+                min="0"
+                inputmode="numeric"
+                class="input-km"
+                [class.invalido]="!!kmError()"
+                [value]="kilometraje() ?? ''"
+                (input)="onKm($any($event.target).value)"
+                aria-label="Kilometraje de salida"
+              />
+              <span class="km-unidad">km</span>
+            </span>
+            @if (kmError()) {
+              <small class="error">{{ kmError() }}</small>
+            } @else {
+              <small>Lectura del odómetro. Último registrado: {{ kmUnidad | number }} km.</small>
+            }
+            @if (avisoMantenimiento()) {
+              <small class="aviso-mant">{{ avisoMantenimiento() }}</small>
+            }
+          </dd>
+        </div>
+        <div class="fila-control">
+          <dt>Nivel de combustible</dt>
+          <dd>
+            <span class="chips-combustible" role="radiogroup" aria-label="Nivel de combustible">
+              @for (n of niveles; track n.valor) {
+                <button
+                  type="button"
+                  class="chip-combustible"
+                  role="radio"
+                  [class.activo]="combustible() === n.valor"
+                  [attr.aria-checked]="combustible() === n.valor"
+                  (click)="combustible.set(n.valor)"
+                >{{ n.etiqueta }}</button>
+              }
+            </span>
+            <small>Según el indicador del tablero.</small>
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- ───── 3. Estado del vehículo ───── -->
+    <section class="bloque">
+      <h3 class="bloque-titulo"><span class="num">3</span> Estado del vehículo</h3>
+      <p class="ayuda-danos">Daños que el vehículo ya tiene al entregarlo, con foto. No se cobran al cliente al devolverlo.</p>
+      <app-inspeccion-danos
+        [(danos)]="danos"
+        [(abierto)]="editandoDano"
+        textoSinDanos=""
+      />
+    </section>
+
+    <!-- ───── 4. Confirmación ───── -->
+    <section class="bloque">
+      <h3 class="bloque-titulo"><span class="num">4</span> Confirmación</h3>
+      <label class="check-fila" [class.marcado]="documentosVerificados()">
+        <input
+          type="checkbox"
+          [checked]="documentosVerificados()"
+          (change)="documentosVerificados.set($any($event.target).checked)"
+        />
+        <span>Verifiqué el <strong>DNI</strong> y la <strong>licencia de conducir vigente</strong> del titular.</span>
+      </label>
+      <label class="check-fila" [class.marcado]="vehiculoConforme()">
+        <input
+          type="checkbox"
+          [checked]="vehiculoConforme()"
+          (change)="vehiculoConforme.set($any($event.target).checked)"
+        />
+        <span>Confirmo la entrega del vehículo en el estado descrito (con los daños registrados, si los hay) y con sus <strong>accesorios</strong>.</span>
+      </label>
+    </section>
+
+    @if (error()) {
+      <div class="alerta-error">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ error() }}</span>
+      </div>
+    }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  @if (entregado()) {
+    <button mat-button type="button" class="btn-cancelar" (click)="cerrar()">Cerrar</button>
+  } @else {
+    @if (!completo()) {
+      <span class="faltan" matTooltip="Complete los puntos pendientes para habilitar la entrega">
+        Falta: {{ faltantes().join(', ') }}
+      </span>
+    }
+    <button mat-button type="button" class="btn-cancelar" (click)="cerrar()" [disabled]="enviando()">Cancelar</button>
+    <button mat-flat-button type="button" class="btn-confirmar" (click)="confirmar()" [disabled]="!completo() || enviando()">
+      @if (enviando()) {
+        <mat-icon class="spin-icon">hourglass_top</mat-icon>
+        <span>Registrando...</span>
+      } @else {
+        <mat-icon>key</mat-icon>
+        <span>Entregar llaves y activar contrato</span>
+      }
+    </button>
+  }
+</mat-dialog-actions>

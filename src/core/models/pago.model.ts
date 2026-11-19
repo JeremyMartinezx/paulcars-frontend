@@ -11,6 +11,8 @@ export interface Pago {
   metodoPago: MetodoPagoCatalogo;
   montoTotal: number;
   fechaPago: string;
+  // Momento exacto del cobro (fecha y hora)
+  fechaHoraPago?: string | null;
   estadoPago: string;
   tipoPago?: 'ALQUILER' | 'LIQUIDACION' | string | null;
   montoRecibido?: number | null;
@@ -19,11 +21,14 @@ export interface Pago {
   numeroOperacion?: string | null;
   bancoOrigen?: string | null;
   canal?: 'DIGITAL' | 'COUNTER' | string | null;
+  registradoPor?: string | null;
+  marcaTarjeta?: string | null;
+  numeroAutorizacion?: string | null;
   validadoPor?: string | null;
   fechaValidacion?: string | null;
 }
 
-// Body de POST /api/pagos (cobro presencial en counter)
+
 export interface RegistrarPagoRequest {
   idAlquiler: number;
   idMetodoPago: number;
@@ -33,9 +38,11 @@ export interface RegistrarPagoRequest {
   numeroOperacion?: string | null;
   bancoOrigen?: string | null;
   garantiaConfirmada?: boolean;
+  marcaTarjeta?: string | null;
+  numeroAutorizacion?: string | null;
 }
 
-// Modelos transaccionales para Yape, Plin y Tarjeta Digital
+
 export interface YapePagoRequest {
   idAlquiler: number;
   celular: string;
@@ -71,4 +78,5 @@ export interface TransaccionPagoResponse {
   fecha: string;
   idAlquiler: number;
   nuevoEstado: string;
+  idPago?: number | null;
 }

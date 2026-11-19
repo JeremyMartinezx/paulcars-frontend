@@ -45,7 +45,7 @@ export class ListarUsuariosComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly authService = inject(AuthService);
 
-  readonly columnas = ['id', 'usuario', 'rol', 'estado', 'acciones'];
+  readonly columnas = ['nombre', 'usuario', 'rol', 'estado', 'acciones'];
 
   readonly busqueda = signal('');
   readonly filtroRol = signal<FiltroRol>('TODOS');
@@ -223,7 +223,7 @@ export class ListarUsuariosComponent implements OnInit {
       if (!confirmado) return;
 
       this.usuarioService.eliminar(usuario.idUsuario!).subscribe({
-        next: () => this.snackBar.open('Usuario eliminado exitosamente', 'Cerrar', { duration: 5000 }),
+        next: () => this.snackBar.open('Usuario eliminado correctamente', 'Cerrar', { duration: 5000 }),
         error: (err) => this.mostrarError(err, 'eliminar el usuario')
       });
     });

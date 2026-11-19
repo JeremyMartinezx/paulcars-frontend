@@ -1,140 +1,159 @@
 <section class="page">
   <app-back-button></app-back-button>
-  <div class="page-header">
-    <div>
-      <p class="eyebrow">Business Intelligence</p>
-      <h1>Reportes ejecutivos</h1>
-      <p class="description">Ingresos, ocupación de flota, rendimiento operativo y rentabilidad por vehículo.</p>
+
+  <header class="page-header">
+    <div class="header-texts">
+      <p class="eyebrow">Centro de reportes</p>
+      <h1>Reportes</h1>
+      <p class="description">Los ingresos del negocio y reportes en PDF o Excel por vehículo, placa, cliente o estado.</p>
     </div>
-  </div>
+  </header>
 
-  <!-- Filtros -->
-  <div class="filtros">
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Desde</mat-label>
-      <input matInput type="date" [(ngModel)]="desde">
-    </mat-form-field>
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Hasta</mat-label>
-      <input matInput type="date" [(ngModel)]="hasta">
-    </mat-form-field>
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Sede</mat-label>
-      <mat-select [(ngModel)]="sede">
-        @for (s of sedes; track s.valor) {
-          <mat-option [value]="s.valor">{{ s.titulo }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Categoría</mat-label>
-      <mat-select [(ngModel)]="categoria">
-        @for (c of categorias; track c) {
-          <mat-option [value]="c">{{ c === 'TODAS' ? 'Todas' : c }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-    <div class="filtros-botones">
-      <button mat-flat-button color="primary" type="button" (click)="consultar()">
-        <mat-icon>filter_alt</mat-icon> Aplicar
-      </button>
-      <button mat-stroked-button type="button" (click)="limpiar()">Mes actual</button>
-    </div>
-  </div>
-
-  @if (error()) {
-    <div class="pc-alert error"><mat-icon>error</mat-icon><span>{{ error() }}</span></div>
-  }
-
-  @if (cargando() && !reporte()) {
-    <p class="vacio">Calculando indicadores...</p>
-  }
-
-  @if (reporte(); as r) {
-    <!-- KPIs principales -->
-    <h2 class="seccion">KPIs principales</h2>
-    <div class="kpi-grid">
-      <article class="kpi">
-        <mat-icon class="k-azul">payments</mat-icon>
-        <span>Ingresos totales del periodo</span>
-        <strong>S/ {{ r.ingresosTotales | number:'1.2-2' }}</strong>
-        <small>{{ r.alquileresEnPeriodo }} contratos iniciados</small>
-      </article>
-      <article class="kpi">
-        <mat-icon class="k-verde">donut_large</mat-icon>
-        <span>Ocupación de flota</span>
-        <strong>{{ r.ocupacionFlota | number:'1.0-1' }}%</strong>
-        <div class="barra-ocupacion"><div [style.width.%]="r.ocupacionFlota"></div></div>
-      </article>
-      <article class="kpi">
-        <mat-icon class="k-ambar">confirmation_number</mat-icon>
-        <span>Ticket promedio por alquiler</span>
-        <strong>S/ {{ r.ticketPromedio | number:'1.2-2' }}</strong>
-        <small>Promedio por contrato</small>
-      </article>
-      <article class="kpi">
-        <mat-icon class="k-azul">event_available</mat-icon>
-        <span>Contratos finalizados</span>
-        <strong>{{ r.alquileresFinalizados }}</strong>
-        <small>Promedio: {{ (r.alquileresEnPeriodo > 0 ? (r.diasTotalesAlquilados / r.alquileresEnPeriodo) : 0) | number:'1.1-1' }} días por alquiler</small>
-      </article>
-    </div>
-
-    <!-- Gráficos -->
-    <div class="graficos">
-      @for (g of graficos(r); track g.titulo) {
-        <section class="grafico">
-          <h3>{{ g.titulo }}</h3>
-          @for (fila of g.filas; track fila.etiqueta) {
-            <div class="barra-fila">
-              <span class="barra-etiqueta">{{ fila.etiqueta }}</span>
-              <div class="barra-pista">
-                <div class="barra" [style.width.%]="anchoBarra(fila, g.filas)"></div>
-              </div>
-              <span class="barra-valor">S/ {{ fila.total | number:'1.0-0' }} <small>({{ fila.cantidad }})</small></span>
-            </div>
-          } @empty {
-            <p class="vacio">Sin pagos en el periodo.</p>
-          }
-        </section>
+  <!-- Periodo -->
+  <div class="periodo">
+    <span class="et">Periodo</span>
+    <div class="chips">
+      @for (r of rangos; track r.valor) {
+        <button type="button" class="chip" [class.activo]="rango() === r.valor" (click)="elegirRango(r.valor)">{{ r.titulo }}</button>
       }
     </div>
+    <label class="fecha">Desde
+      <input type="date" [ngModel]="desde()" (ngModelChange)="cambiarFecha('desde', $event)" />
+    </label>
+    <label class="fecha">Hasta
+      <input type="date" [ngModel]="hasta()" (ngModelChange)="cambiarFecha('hasta', $event)" />
+    </label>
+  </div>
 
-    <!-- Top vehículos -->
-    <section class="tabla-card">
-      <h2>Top vehículos más rentables</h2>
-      <div class="tabla-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th><th>Vehículo</th><th>Placa</th><th>Categoría</th>
-              <th class="num">Alquileres</th><th class="num">Días</th>
-              <th class="num">Ingresos</th><th>Utilización</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (v of r.topVehiculos; track v.idVehiculo; let i = $index) {
-              <tr>
-                <td>{{ i + 1 }}</td>
-                <td><strong>{{ v.vehiculo }}</strong></td>
-                <td>{{ v.placa }}</td>
-                <td>{{ v.categoria }}</td>
-                <td class="num">{{ v.alquileres }}</td>
-                <td class="num">{{ v.diasAlquilados }}</td>
-                <td class="num">S/ {{ v.ingresos | number:'1.2-2' }}</td>
-                <td>
-                  <div class="util">
-                    <div class="util-pista"><div [style.width.%]="v.utilizacion"></div></div>
-                    <span>{{ v.utilizacion | number:'1.0-0' }}%</span>
-                  </div>
-                </td>
-              </tr>
-            } @empty {
-              <tr><td colspan="8" class="vacio">No hay vehículos con estos filtros.</td></tr>
-            }
-          </tbody>
-        </table>
+  <!-- Pestañas -->
+  <nav class="pestanas" aria-label="Reportes">
+    <button type="button" class="pestana" [class.activa]="vista() === 'RESUMEN'" (click)="vista.set('RESUMEN')">
+      <mat-icon>insights</mat-icon> Resumen
+    </button>
+    <button type="button" class="pestana" [class.activa]="vista() === 'GENERAR'" (click)="vista.set('GENERAR')">
+      <mat-icon>description</mat-icon> Generar reporte
+    </button>
+  </nav>
+
+  @if (vista() === 'RESUMEN') {
+    <!-- ═══════ RESUMEN: los indicadores del periodo ═══════ -->
+    @if (resumen(); as r) {
+      <p class="nota">Dinero realmente cobrado (menos devoluciones) · {{ periodoTexto() }}</p>
+      <div class="kpis">
+        <div class="kpi principal">
+          <span>Ingresos</span>
+          <strong>S/ {{ r.ingresosTotales | number:'1.2-2' }}</strong>
+        </div>
+        <div class="kpi">
+          <span>Alquileres</span>
+          <strong>{{ r.alquileresEnPeriodo }}</strong>
+        </div>
+        <div class="kpi">
+          <span>Ticket promedio</span>
+          <strong>S/ {{ r.ticketPromedio | number:'1.2-2' }}</strong>
+        </div>
+        <div class="kpi">
+          <span>Ocupación de la flota</span>
+          <strong>{{ r.ocupacionFlota | number:'1.0-1' }} %</strong>
+        </div>
+        <div class="kpi">
+          <span>Pagos pendientes</span>
+          <strong>S/ {{ r.montoPendiente | number:'1.2-2' }}</strong>
+          <small>{{ r.pagosPendientes }} {{ r.pagosPendientes === 1 ? 'reserva' : 'reservas' }} por pagar</small>
+        </div>
       </div>
-    </section>
+
+      <div class="paneles">
+        <div class="panel">
+          <h3>Flota más alquilada</h3>
+          @for (v of topVehiculos(); track v.placa + v.vehiculo) {
+            <div class="fila-lista">
+              <span>{{ v.vehiculo }} <small>{{ v.placa }} · {{ v.alquileres }} {{ v.alquileres === 1 ? 'alquiler' : 'alquileres' }}</small></span>
+              <strong>S/ {{ v.ingresos | number:'1.2-2' }}</strong>
+            </div>
+          } @empty {
+            <p class="vacio">Sin ingresos en este periodo.</p>
+          }
+        </div>
+
+        <div class="panel">
+          <h3>Ingresos por método de pago</h3>
+          @for (m of r.ingresosPorMetodo; track m.etiqueta) {
+            <div class="barra-fila">
+              <span class="barra-etiqueta">{{ m.etiqueta }}</span>
+              <div class="barra-pista"><div class="barra" [style.width.%]="anchoBarra(m, r.ingresosPorMetodo)"></div></div>
+              <span class="barra-valor">S/ {{ m.total | number:'1.2-2' }}</span>
+            </div>
+          } @empty {
+            <p class="vacio">Sin cobros en este periodo.</p>
+          }
+        </div>
+      </div>
+    } @else if (cargando()) {
+      <p class="vacio">Cargando...</p>
+    } @else {
+      <p class="vacio">No se pudo cargar el resumen.</p>
+    }
+  } @else {
+    <!-- ═══════ GENERAR REPORTE: se eligen los datos y se genera ═══════ -->
+    <div class="formulario">
+      <div class="campos">
+        <label>Vehículo
+          <select [ngModel]="modelo()" (ngModelChange)="cambiarModelo($event)">
+            <option value="TODOS">Todos</option>
+            @for (m of modelos(); track m) { <option [value]="m">{{ m }}</option> }
+          </select>
+        </label>
+        <div class="combo-campo">Placa
+          <div class="combo">
+            <button type="button" class="combo-btn" (click)="placaAbierta.set(!placaAbierta())">
+              <span>{{ placa() === 'TODAS' ? 'Todas' : placa() }}</span>
+              <mat-icon>expand_more</mat-icon>
+            </button>
+            @if (placaAbierta()) {
+              <div class="combo-fondo" (click)="placaAbierta.set(false)"></div>
+              <ul class="combo-lista">
+                <li [class.sel]="placa() === 'TODAS'" (click)="elegirPlaca('TODAS')">Todas</li>
+                @for (p of placas(); track p) {
+                  <li [class.sel]="placa() === p" (click)="elegirPlaca(p)">{{ p }}</li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
+        <label>Cliente o DNI
+          <input type="text" placeholder="Opcional" [ngModel]="cliente()" (ngModelChange)="cliente.set($event)" />
+        </label>
+      </div>
+
+      <div class="campos segunda">
+        <label>Sede
+          <select [ngModel]="sede()" (ngModelChange)="sede.set($event)">
+            @for (x of sedes; track x.valor) { <option [value]="x.valor">{{ x.titulo }}</option> }
+          </select>
+        </label>
+        <label>Método de pago
+          <select [ngModel]="metodo()" (ngModelChange)="metodo.set($event)">
+            @for (m of metodos; track m) { <option [value]="m">{{ m === 'TODOS' ? 'Todos' : m }}</option> }
+          </select>
+        </label>
+        <label>Estado de los contratos
+          <select [ngModel]="estado()" (ngModelChange)="estado.set($event)">
+            @for (e of estados; track e.valor) { <option [value]="e.valor">{{ e.titulo }}</option> }
+          </select>
+        </label>
+      </div>
+
+      @if (error()) { <p class="error">{{ error() }}</p> }
+
+      <div class="acciones">
+        <button type="button" class="btn primario" (click)="generar('pdf')" [disabled]="generando()">
+          <mat-icon>picture_as_pdf</mat-icon> Generar PDF
+        </button>
+        <button type="button" class="btn" (click)="generar('excel')" [disabled]="generando()">
+          <mat-icon>table_view</mat-icon> {{ generando() ? 'Generando...' : 'Generar Excel' }}
+        </button>
+      </div>
+    </div>
   }
 </section>
