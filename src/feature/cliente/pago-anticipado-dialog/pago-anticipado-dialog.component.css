@@ -860,3 +860,42 @@
   margin: 0;
   border: 0;
 }
+
+/* Recibo digital descargable */
+.btn-exito-recibo {
+  width: 100%;
+  height: 44px;
+  margin-bottom: 8px;
+  border-radius: 10px !important;
+  border: 1.5px solid #0d1b3e !important;
+  color: #0d1b3e !important;
+  font-weight: 700 !important;
+}
+
+.btn-exito-recibo mat-icon {
+  color: #b91c1c;
+  margin-right: 6px;
+}
+
+.recibo-correo-aviso {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 0.78rem;
+  color: #1d4ed8;
+}
+
+.recibo-correo-aviso mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.recibo-error {
+  margin: 0 0 10px;
+  font-size: 0.76rem;
+  color: #b91c1c;
+  text-align: center;
+}

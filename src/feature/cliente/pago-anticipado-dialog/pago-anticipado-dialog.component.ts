@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -13,6 +13,7 @@ import * as QRCode from 'qrcode';
 import { Alquiler } from '../../../core/models/alquiler.model';
 import { PagoService } from '../../../core/service/pago.service';
 import { TransaccionPagoResponse } from '../../../core/models/pago.model';
+import { VisorPdfDialogComponent } from '../../../shared/components/visor-pdf-dialog/visor-pdf-dialog.component';
 
 export interface PagoAnticipadoDialogData {
   alquiler: Alquiler;
@@ -43,6 +44,7 @@ export class PagoAnticipadoDialogComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<PagoAnticipadoDialogComponent>);
   private readonly pagoService = inject(PagoService);
+  private readonly dialog = inject(MatDialog);
   readonly data: PagoAnticipadoDialogData = inject(MAT_DIALOG_DATA);
 
   readonly esDeuda = this.data.modo === 'DEUDA';
@@ -239,7 +241,7 @@ export class PagoAnticipadoDialogComponent implements OnInit, OnDestroy {
       }).subscribe({
         next: (res: TransaccionPagoResponse) => {
           this.procesando.set(false);
-          this.pagoExitoso.set(res);
+          this.registrarExito(res);
         },
         error: (err) => {
           this.procesando.set(false);
@@ -270,7 +272,7 @@ export class PagoAnticipadoDialogComponent implements OnInit, OnDestroy {
       }).subscribe({
         next: (res: TransaccionPagoResponse) => {
           this.procesando.set(false);
-          this.pagoExitoso.set(res);
+          this.registrarExito(res);
         },
         error: (err) => {
           this.procesando.set(false);
@@ -293,7 +295,7 @@ export class PagoAnticipadoDialogComponent implements OnInit, OnDestroy {
       }).subscribe({
         next: (res: TransaccionPagoResponse) => {
           this.procesando.set(false);
-          this.pagoExitoso.set(res);
+          this.registrarExito(res);
         },
         error: (err) => {
           this.procesando.set(false);
@@ -301,6 +303,28 @@ export class PagoAnticipadoDialogComponent implements OnInit, OnDestroy {
         }
       });
     }, 1100);
+  }
+
+  // Al confirmarse el pago se guarda el resultado; la boleta se envía al correo y se puede ver con el botón de la pantalla de éxito
+  private registrarExito(res: TransaccionPagoResponse): void {
+    this.pagoExitoso.set(res);
+  }
+
+  // Muestra el recibo oficial en PDF del pago recién realizado
+  verRecibo(): void {
+    const idPago = this.pagoExitoso()?.idPago;
+    if (!idPago) return;
+    this.dialog.open(VisorPdfDialogComponent, {
+      width: '860px',
+      maxWidth: '96vw',
+      panelClass: 'visor-pdf-panel',
+      data: {
+        titulo: 'Boleta de venta electrónica',
+        subtitulo: 'Pago realizado',
+        pdf$: this.pagoService.descargarRecibo(idPago),
+        nombreArchivo: `REC-${String(idPago).padStart(6, '0')}.pdf`
+      }
+    });
   }
 
   finalizarYVolver(): void {
