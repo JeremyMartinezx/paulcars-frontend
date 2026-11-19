@@ -1,0 +1,71 @@
+<header class="cd-cabecera">
+  <div class="cd-icono"><mat-icon>payments</mat-icon></div>
+  <div class="cd-titulo">
+    <h2 mat-dialog-title>Cobrar deuda</h2>
+    <span>{{ codigo }}@if (alquiler.cliente) { &bull; {{ alquiler.cliente.nombres }} {{ alquiler.cliente.apellidos }} }</span>
+  </div>
+  <button mat-icon-button type="button" class="cd-cerrar" (click)="cerrar()" aria-label="Cerrar">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<mat-dialog-content class="cd-cuerpo">
+  @if (cargando()) {
+    <p class="cd-nota">Cargando...</p>
+  } @else {
+  @if (info(); as i) {
+    <section class="cd-resumen">
+      <div><span>Deuda pendiente</span><strong class="grande">S/ {{ pendiente() | number:'1.2-2' }}</strong></div>
+      @if (i.deudaPagada > 0) {
+        <div><span>Ya pagado</span><strong>S/ {{ i.deudaPagada | number:'1.2-2' }}</strong></div>
+      }
+    </section>
+    <p class="cd-nota">Son los cargos que superaron la garantía. Cuando se pague todo el saldo, el contrato pasa a <strong>Finalizado</strong>.</p>
+
+    @if (pendiente() > 0) {
+      <label class="cd-campo">
+        Método de pago
+        <select [(ngModel)]="idMetodo">
+          @for (m of metodos(); track m.idMetodoPago) { <option [ngValue]="m.idMetodoPago">{{ nombreMetodo(m) }}</option> }
+        </select>
+      </label>
+
+      <label class="cd-campo">
+        Monto a cobrar (S/)
+        <input type="number" min="0" step="0.01" inputmode="decimal"
+               [placeholder]="pendiente() | number:'1.2-2'" [value]="montoTexto()" (input)="montoTexto.set($any($event.target).value)" />
+        <small>Si lo deja vacío se cobra todo el saldo. Puede cobrar una parte.</small>
+      </label>
+
+      @if (esEfectivo) {
+        <label class="cd-campo">
+          Monto recibido (S/)
+          <input type="number" min="0" step="0.01" inputmode="decimal" [value]="recibidoTexto()" (input)="recibidoTexto.set($any($event.target).value)" />
+          @if (vuelto() > 0) { <small>Vuelto: <strong>S/ {{ vuelto() | number:'1.2-2' }}</strong></small> }
+        </label>
+      } @else {
+        <label class="cd-campo">
+          Número de operación (opcional)
+          <input type="text" maxlength="40" [(ngModel)]="numeroOperacion" />
+        </label>
+      }
+    }
+
+    @if (error()) {
+      <div class="cd-error"><mat-icon>error_outline</mat-icon><span>{{ error() }}</span></div>
+    }
+  }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="cd-acciones">
+  <button mat-button type="button" (click)="cerrar()" [disabled]="enviando()">Cancelar</button>
+  <button mat-flat-button type="button" class="cd-confirmar" (click)="confirmar()" [disabled]="!puedeCobrar || pendiente() <= 0">
+    @if (enviando()) {
+      <span>Registrando...</span>
+    } @else {
+      <mat-icon>check</mat-icon>
+      <span>Registrar cobro</span>
+    }
+  </button>
+</mat-dialog-actions>
