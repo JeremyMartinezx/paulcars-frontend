@@ -47,4 +47,9 @@ export class CatalogoService {
   actualizarCombustible(id: number, nombreCombustible: string): Observable<Combustible> {
     return this.http.put<Combustible>(`${this.apiUrl}/combustibles/${id}`, { nombreCombustible });
   }
+
+  // Solo se puede eliminar lo que ningún vehículo está usando
+  eliminar(ruta: 'marcas' | 'modelos' | 'tipos-vehiculo' | 'combustibles', id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${ruta}/${id}`);
+  }
 }

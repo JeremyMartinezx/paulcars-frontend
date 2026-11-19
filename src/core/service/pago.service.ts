@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Injectable, inject, signal } from '@angular/core';
+import { huboCambios } from '../utils/comparar.util';
 import { Observable, tap } from 'rxjs';
 
 import {
@@ -24,14 +25,10 @@ export class PagoService {
 
   cargar(): void {
     this.http.get<Pago[]>(this.apiUrl).subscribe({
-      next: (data) => this.pagosSignal.set(data),
+      next: (data) => { if (huboCambios(this.pagosSignal(), data)) this.pagosSignal.set(data); },
       error: (err) => console.error('Error cargando pagos:', err)
     });
   }
-
-  // =========================================================================
-  // INTEGRACIÓN DE PAGOS (YAPE OTP, PLIN QR, TARJETA DIGITAL Y COUNTER POS)
-  // =========================================================================
 
   pagarConYape(request: YapePagoRequest): Observable<TransaccionPagoResponse> {
     return this.http.post<TransaccionPagoResponse>(`${this.apiUrl}/yape`, request).pipe(
@@ -51,15 +48,26 @@ export class PagoService {
     );
   }
 
-  // El body cambia según el método (efectivo, tarjeta POS, Yape/Plin o transferencia)
   registrarPago(request: RegistrarPagoRequest): Observable<Pago> {
     return this.http.post<Pago>(this.apiUrl, request).pipe(
       tap(() => this.cargar())
     );
   }
 
-  // Cuánto falta pagar del contrato
   obtenerSaldo(idAlquiler: number): Observable<{ saldoContrato: number; saldoDeuda: number }> {
     return this.http.get<{ saldoContrato: number; saldoDeuda: number }>(`${this.apiUrl}/alquiler/${idAlquiler}/saldo`);
+  }
+
+  descargarRecibo(idPago: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${idPago}/recibo`, { responseType: 'blob' });
+  }
+
+  enviarReciboPorCorreo(idPago: number): Observable<{ enviado: boolean; correo: string }> {
+    return this.http.post<{ enviado: boolean; correo: string }>(`${this.apiUrl}/${idPago}/recibo/enviar`, null);
+  }
+
+  // Pagos de un contrato (para listar sus recibos)
+  listarPorAlquiler(idAlquiler: number): Observable<Pago[]> {
+    return this.http.get<Pago[]>(`${this.apiUrl}/alquiler/${idAlquiler}`);
   }
 }
