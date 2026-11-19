@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
@@ -38,7 +38,16 @@ import {
 } from '../aprobar-reserva-dialog/aprobar-reserva-dialog.component';
 import { RechazoReservaDialogComponent } from '../rechazo-reserva-dialog/rechazo-reserva-dialog.component';
 import { CheckoutInspeccionDialogComponent } from '../checkout-inspeccion-dialog/checkout-inspeccion-dialog.component';
-import { ActaLiquidacionDialogComponent } from '../acta-liquidacion-dialog/acta-liquidacion-dialog.component';
+import { EntregaLlavesDialogComponent } from '../entrega-llaves-dialog/entrega-llaves-dialog.component';
+import { EvaluarDanosDialogComponent } from '../evaluar-danos-dialog/evaluar-danos-dialog.component';
+import { CobrarDeudaDialogComponent } from '../cobrar-deuda-dialog/cobrar-deuda-dialog.component';
+import { ComprobanteAlquilerService } from '../../../core/service/comprobante-alquiler.service';
+import { MINUTOS_ENTREGA_ANTICIPADA, entregaAunNoHabilitada, textoEntregaDesde } from '../../../core/utils/entrega.util';
+import { DetalleAlquilerDialogComponent } from '../detalle-alquiler-dialog/detalle-alquiler-dialog.component';
+import { DevolucionDialogComponent } from '../../../shared/components/devolucion-dialog/devolucion-dialog.component';
+import { CancelarReservaDialogComponent } from '../cancelar-reserva-dialog/cancelar-reserva-dialog.component';
+import { VisorPdfDialogComponent } from '../../../shared/components/visor-pdf-dialog/visor-pdf-dialog.component';
+import { descargarBlob, fechaDiaMes, formatearFechaHoraCorta, formatearFechaHoraExacta } from '../../../core/utils/descarga.util';
 import { LiquidacionResponse } from '../../../core/models/liquidacion.model';
 import { obtenerImagenVehiculo } from '../../../core/data/vehiculo-galerias.data';
 import {
@@ -63,6 +72,18 @@ export type FiltroFecha = 'TODAS' | 'HOY' | 'ATRASADAS' | 'FECHA_ESPECIFICA';
 export type SubfiltroReserva = 'TODAS' | 'PAGADAS' | 'POR_PAGAR' | 'PENDIENTES';
 export type SubfiltroFinalizado = 'TODAS' | 'NORMAL' | 'DEUDA';
 
+// Orden de la tabla: prioridad operativa, los últimos en llegar a un estado o los últimos en salir de él
+export type OrdenTabla = 'PRIORIDAD' | 'LLEGADA' | 'SALIDA';
+
+// Estados internos que forman cada grupo del filtro
+const GRUPOS_ESTADO: Record<string, string[]> = {
+  PENDIENTE: ['PENDIENTE'],
+  RESERVADO: ['RESERVADO', 'APROBADO', 'CONFIRMADO', 'PAGADO', 'PAGO_EN_REVISION'],
+  ACTIVO: ['ACTIVO', 'EN_CURSO', 'EN CURSO'],
+  FINALIZADO: ['FINALIZADO', 'CERRADO_CON_DEUDA'],
+  CANCELADO: ['CANCELADO', 'RECHAZADO', 'RECHAZADO_DOCUMENTACION', 'CANCELADO_SIN_STOCK']
+};
+
 @Component({
   selector: 'app-listar-alquileres',
   imports: [
@@ -84,6 +105,7 @@ export type SubfiltroFinalizado = 'TODAS' | 'NORMAL' | 'DEUDA';
   styleUrl: './listar-alquileres.component.css',
 })
 export class ListarAlquileresComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly alquilerService = inject(AlquilerService);
   private readonly pagoService = inject(PagoService);
   private readonly dialog = inject(MatDialog);
@@ -96,15 +118,124 @@ export class ListarAlquileresComponent implements OnInit {
   readonly etiquetaEstado = etiquetaEstadoAlquiler;
   readonly motivoLegible = motivoRechazoLegible;
   readonly formatearCodigoAlquiler = formatearCodigoAlquiler;
+  readonly fechaHora = formatearFechaHoraExacta;
+  readonly fechaHoraCorta = formatearFechaHoraCorta;
+  readonly fechaDiaMes = fechaDiaMes;
+
+  private readonly comprobantes = inject(ComprobanteAlquilerService);
 
   readonly columnas = computed(() => {
-    if (this.filtroEstado() === 'FINALIZADO') {
-      return ['cliente', 'vehiculo', 'fechas', 'estado', 'comprobante'];
+    // En Finalizados la columna Acción solo aparece si hay algo por hacer (evaluar daños pendientes)
+    if (this.filtroEstado() === 'FINALIZADO' && !this.alquileresFiltrados().some((a) => a.estadoDanos === 'PENDIENTE_EVALUACION' || a.estado?.nombreEstado === 'CERRADO_CON_DEUDA')) {
+      return ['cliente', 'vehiculo', 'fechas', 'registro', 'estado', 'detalle', 'comprobante'];
     }
-    return ['cliente', 'vehiculo', 'fechas', 'estado', 'accion', 'comprobante'];
+    return ['cliente', 'vehiculo', 'fechas', 'registro', 'estado', 'accion', 'detalle', 'comprobante'];
   });
 
   readonly busqueda = signal('');
+  // Contrato recién registrado: se muestra primero en la tabla hasta que se cambie el orden o el filtro
+  readonly alquilerRecienId = signal<number | null>(null);
+  readonly ordenPor = signal<OrdenTabla>('PRIORIDAD');
+
+  // El orden por llegada/salida solo tiene sentido con un estado elegido
+  readonly hayEstadoElegido = computed(() => !!GRUPOS_ESTADO[this.filtroEstado()]);
+
+  readonly textoOrden = computed(() => {
+    switch (this.ordenPor()) {
+      case 'LLEGADA':
+        return 'Más recientes en llegar';
+      case 'SALIDA':
+        return 'Más recientes en salir';
+      default:
+        return 'Prioridad operativa';
+    }
+  });
+
+  // Para cada contrato que salió del estado elegido: cuándo salió (el cambio más reciente)
+  readonly salidasDelEstado = computed(() => {
+    const grupo = GRUPOS_ESTADO[this.filtroEstado()];
+    const mapa = new Map<number, string>();
+    this.destinoSalida.clear();
+    if (!grupo) return mapa;
+    for (const h of this.alquilerService.historialEstados()) {
+      const ant = (h.estadoAnterior || '').toUpperCase();
+      const nuevo = (h.estadoNuevo || '').toUpperCase();
+      if (ant && grupo.includes(ant) && !grupo.includes(nuevo)) {
+        mapa.set(h.idAlquiler, h.fechaHora); // el historial viene ordenado: gana el último
+        this.destinoSalida.set(h.idAlquiler, nuevo);
+      }
+    }
+    return mapa;
+  });
+
+  cambiarOrden(orden: OrdenTabla): void {
+    this.alquilerRecienId.set(null);
+    this.ordenPor.set(orden);
+    this.paginaActual.set(1);
+  }
+
+  // Estado al que pasó cada contrato cuando salió del estado elegido
+  private readonly destinoSalida = new Map<number, string>();
+
+  // Título de la columna: la misma columna REGISTRO cambia según el orden elegido
+  get tituloRegistro(): string {
+    switch (this.ordenPor()) {
+      case 'LLEGADA':
+        return 'LLEGÓ AL ESTADO';
+      case 'SALIDA':
+        return `SALIÓ DE ${this.textoBotonEstado().toUpperCase()}`;
+      default:
+        return 'ÚLTIMO CAMBIO';
+    }
+  }
+
+  // Contenido de la columna de movimiento: fecha y hora, y a qué estado corresponde
+  movimientoEstado(a: Alquiler): { fecha: string | null | undefined; detalle: string } | null {
+    const orden = this.ordenPor();
+    if (orden === 'LLEGADA') {
+      const fecha = a.fechaUltimoEstado;
+      return { fecha, detalle: '' }; // el estado ya se ve en la columna ESTADO
+    }
+    if (orden === 'SALIDA' && a.idAlquiler) {
+      const fecha = this.salidasDelEstado().get(a.idAlquiler);
+      const destino = this.destinoSalida.get(a.idAlquiler);
+      // Solo se aclara a dónde pasó cuando es distinto del estado actual que ya muestra la columna ESTADO
+      const etiquetaDestino = destino ? this.etiquetaNombreEstado(destino, a) : '';
+      return { fecha, detalle: etiquetaDestino && etiquetaDestino !== this.etiquetaEstadoActual(a) ? `Pasó a ${etiquetaDestino}` : '' };
+    }
+    return null;
+  }
+
+  // Etiqueta del estado actual del contrato (distingue reservado por pagar / pagado)
+  etiquetaEstadoActual(a: Alquiler): string {
+    return this.etiquetaNombreEstado((a.estado?.nombreEstado || '').toUpperCase(), a);
+  }
+
+  private etiquetaNombreEstado(nombre: string, a: Alquiler): string {
+    switch (nombre) {
+      case 'PENDIENTE':
+        return 'Pendiente';
+      case 'RESERVADO':
+      case 'APROBADO':
+        return 'Reservado · Por pagar';
+      case 'PAGADO':
+      case 'CONFIRMADO':
+        return 'Reservado · Pagado';
+      case 'ACTIVO':
+      case 'EN_CURSO':
+      case 'EN CURSO':
+        return 'En ruta';
+      case 'FINALIZADO':
+        return 'Finalizado';
+      case 'CANCELADO':
+      case 'RECHAZADO':
+      case 'RECHAZADO_DOCUMENTACION':
+      case 'CANCELADO_SIN_STOCK':
+        return 'Cancelado';
+      default:
+        return this.etiquetaEstado(a.estado?.nombreEstado);
+    }
+  }
   readonly filtroEstado = signal<FiltroEstado>('TODOS');
   readonly filtroFecha = signal<FiltroFecha>('TODAS');
   readonly fechaPersonalizada = signal<string>('');
@@ -247,6 +378,39 @@ export class ListarAlquileresComponent implements OnInit {
   readonly alquileres = this.alquilerService.alquileres;
   readonly pagos = this.pagoService.pagos;
 
+  // ── Detalle de una reserva cancelada o rechazada (motivo y, si hubo pago, devolución) ──
+
+  verDevolucion(a: Alquiler): void {
+    const ref = this.dialog.open(DevolucionDialogComponent, {
+      width: '560px',
+      maxWidth: '96vw',
+      data: { alquiler: a },
+      autoFocus: false
+    });
+    ref.afterClosed().subscribe((res?: { accion?: string }) => {
+      if (res?.accion === 'ACTUALIZAR') {
+        this.alquilerService.cargar();
+        this.snackBar.open('Esa reserva ya no está disponible. Se actualizó la lista.', 'Cerrar', { duration: 6000 });
+      }
+    });
+  }
+
+  // Se programa una recarga justo a la hora en que vence el plazo de pago más cercano: la reserva se cancela y sale al instante
+  private temporizadorVencimiento: ReturnType<typeof setTimeout> | null = null;
+  private readonly programarVencimiento = effect(() => {
+    const ahora = Date.now();
+    const proximos = this.alquileres()
+      .map((a) => (a.fechaLimitePago ? new Date(a.fechaLimitePago).getTime() : NaN))
+      .filter((t) => !isNaN(t) && t > ahora - 1000);
+    if (this.temporizadorVencimiento) clearTimeout(this.temporizadorVencimiento);
+    this.temporizadorVencimiento = null;
+    if (proximos.length === 0) return;
+    const espera = Math.max(Math.min(...proximos) - ahora + 200, 200);
+    // setTimeout no admite esperas mayores a ~24 días; la recarga cada 30 s cubre los plazos lejanos
+    if (espera > 2_000_000_000) return;
+    this.temporizadorVencimiento = setTimeout(() => this.alquilerService.cargar(), espera);
+  });
+
   fechaHoyStr(): string {
     const now = new Date();
     return now.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
@@ -265,6 +429,11 @@ export class ListarAlquileresComponent implements OnInit {
   esHoy(fecha?: string): boolean {
     if (!fecha) return false;
     return fecha === this.fechaHoyStr();
+  }
+
+  // La entrega se habilita 30 minutos antes de la hora pactada
+  entregaBloqueada(a: Alquiler): boolean {
+    return entregaAunNoHabilitada(a);
   }
 
   esFechaFutura(fecha?: string): boolean {
@@ -395,7 +564,7 @@ export class ListarAlquileresComponent implements OnInit {
         return e === 'ACTIVO' || e === 'EN_CURSO' || e === 'EN CURSO';
       if (est === 'FINALIZADO') return this.esFinalizadoTotal(a);
       if (est === 'CERRADO_CON_DEUDA') return e === 'CERRADO_CON_DEUDA';
-      if (est === 'CANCELADO') return e === 'CANCELADO' || e === 'RECHAZADO';
+      if (est === 'CANCELADO') return e === 'CANCELADO' || e === 'RECHAZADO' || e === 'RECHAZADO_DOCUMENTACION' || e === 'CANCELADO_SIN_STOCK';
       return false;
     }).length;
   }
@@ -404,6 +573,8 @@ export class ListarAlquileresComponent implements OnInit {
     const texto = this.busqueda().trim().toLowerCase();
     const estado = this.filtroEstado();
     const hoy = this.fechaHoyStr();
+    const orden = this.ordenPor();
+    const salidas = orden === 'SALIDA' && GRUPOS_ESTADO[estado] ? this.salidasDelEstado() : null;
 
     return this.alquileresBaseFecha()
       .filter((a) => {
@@ -414,9 +585,10 @@ export class ListarAlquileresComponent implements OnInit {
         const refStr = a.idAlquiler
           ? `alq-${String(a.idAlquiler).padStart(6, '0')}`
           : '';
+        const documento = a.cliente?.numeroDocumento ?? '';
         const coincideTexto =
           !texto ||
-          `${nombreCliente} ${nombreVehiculo} ${placa} ${idStr} ${refStr}`
+          `${nombreCliente} ${documento} ${nombreVehiculo} ${placa} ${idStr} ${refStr}`
             .toLowerCase()
             .includes(texto);
 
@@ -466,14 +638,30 @@ export class ListarAlquileresComponent implements OnInit {
         } else if (estado === 'CERRADO_CON_DEUDA') {
           coincideEstado = e === 'CERRADO_CON_DEUDA';
         } else if (estado === 'CANCELADO') {
-          coincideEstado = e === 'CANCELADO' || e === 'RECHAZADO';
+          coincideEstado = e === 'CANCELADO' || e === 'RECHAZADO' || e === 'RECHAZADO_DOCUMENTACION' || e === 'CANCELADO_SIN_STOCK';
         } else if (estado !== 'TODOS') {
           coincideEstado = e === estado;
+        }
+
+        // En "más recientes en salir" se muestran los contratos que ya abandonaron el estado elegido
+        if (orden === 'SALIDA' && salidas) {
+          coincideEstado = !!a.idAlquiler && salidas.has(a.idAlquiler);
         }
 
         return coincideTexto && coincideEstado;
       })
       .sort((a, b) => {
+        const nuevoId = this.alquilerRecienId();
+        if (nuevoId !== null) {
+          if (a.idAlquiler === nuevoId) return -1;
+          if (b.idAlquiler === nuevoId) return 1;
+        }
+        if (orden === 'LLEGADA') {
+          return (b.fechaUltimoEstado || '').localeCompare(a.fechaUltimoEstado || '');
+        }
+        if (orden === 'SALIDA' && salidas) {
+          return (salidas.get(b.idAlquiler ?? 0) || '').localeCompare(salidas.get(a.idAlquiler ?? 0) || '');
+        }
         // 2. Criterio AUTOMATICO (Prioridad operativa inteligente según el estado actual)
         if (estado === 'PENDIENTE') {
           // Solicitudes: las más antiguas primero para atender al cliente en orden de espera
@@ -637,6 +825,11 @@ export class ListarAlquileresComponent implements OnInit {
     this.alquilerService.cargar();
     this.pagoService.cargar();
 
+    // La lista se mantiene al día sola (ver ActualizacionEnVivoService); aquí solo se limpia el aviso de vencimiento
+    this.destroyRef.onDestroy(() => {
+      if (this.temporizadorVencimiento) clearTimeout(this.temporizadorVencimiento);
+    });
+
     // Redirección desde la campana: ?reservaId=25&accion=aprobar | checkout
     this.route.queryParamMap.subscribe((params) => {
       const id = Number(params.get('reservaId'));
@@ -699,14 +892,46 @@ export class ListarAlquileresComponent implements OnInit {
 
     ref.afterClosed().subscribe((res) => {
       if (res?.exito) {
-        const vuelto =
-          Number(res.vuelto ?? 0) > 0
-            ? ` Vuelto: S/ ${Number(res.vuelto).toFixed(2)}.`
-            : '';
-        
         this.pagoService.cargar();
         this.alquilerService.cargar();
+
+        this.snackBar.open('Pago registrado correctamente.', 'Cerrar', { duration: 4000 });
       }
+    });
+  }
+
+  // Detalle de la reserva: cancelada/rechazada → motivo y devolución; el resto → ficha completa con su PDF
+  verDetalle(alquiler: Alquiler): void {
+    const est = (alquiler.estado?.nombreEstado || '').toUpperCase();
+    if (['CANCELADO', 'RECHAZADO', 'RECHAZADO_DOCUMENTACION', 'CANCELADO_SIN_STOCK'].includes(est)) {
+      this.verDevolucion(alquiler);
+      return;
+    }
+    this.abrirFicha(alquiler);
+  }
+
+  tieneComprobante(a: Alquiler): boolean {
+    return this.comprobantes.tieneComprobante(a, this.esReservaPagada(a));
+  }
+
+  verComprobante(a: Alquiler): void {
+    this.comprobantes.abrir(a);
+  }
+
+  private abrirFicha(alquiler: Alquiler): void {
+    this.dialog.open(DetalleAlquilerDialogComponent, {
+      // El administrador ve el detalle completo (más ancho); el asesor, una vista más corta
+      width: this.esAdmin() ? '960px' : '720px',
+      maxWidth: '96vw',
+      data: { alquiler },
+      autoFocus: false
+    });
+  }
+
+  descargarRecibo(idPago: number): void {
+    this.pagoService.descargarRecibo(idPago).subscribe({
+      next: (blob) => descargarBlob(blob, `REC-${String(idPago).padStart(6, '0')}.pdf`),
+      error: () => this.snackBar.open('No se pudo descargar el recibo.', 'Cerrar', { duration: 5000 }),
     });
   }
 
@@ -723,9 +948,13 @@ export class ListarAlquileresComponent implements OnInit {
     ) {
       this.filtroFecha.set('TODAS');
     }
+    this.alquilerRecienId.set(null);
     this.filtroEstado.set(estado);
     this.subfiltroReserva.set('TODAS');
     this.subfiltroFinalizado.set('TODAS');
+    if (!GRUPOS_ESTADO[estado] && this.ordenPor() === 'SALIDA') {
+      this.ordenPor.set('PRIORIDAD');
+    }
     this.paginaActual.set(1);
   }
 
@@ -737,6 +966,13 @@ export class ListarAlquileresComponent implements OnInit {
   cambiarSubfiltroReserva(sub: SubfiltroReserva): void {
     this.subfiltroReserva.set(sub);
     this.paginaActual.set(1);
+  }
+
+  // Muestra solo el primer nombre y el primer apellido del cliente
+  nombreCorto(cliente?: { nombres?: string | null; apellidos?: string | null } | null): string {
+    const primerNombre = (cliente?.nombres ?? '').trim().split(/\s+/)[0] ?? '';
+    const primerApellido = (cliente?.apellidos ?? '').trim().split(/\s+/)[0] ?? '';
+    return `${primerNombre} ${primerApellido}`.trim();
   }
 
   // Modal "Nuevo Alquiler" en counter (con extras)
@@ -752,9 +988,17 @@ export class ListarAlquileresComponent implements OnInit {
         if (!resultado) return;
 
         this.alquilerService.crearEnCounter(resultado).subscribe({
-          next: () => {
+          next: (nuevo) => {
+            // Que el contrato recién hecho se vea de inmediato: sin filtros y en la primera fila
+            this.busqueda.set('');
+            this.filtroFecha.set('TODAS');
+            this.filtroEstado.set('TODOS');
+            this.subfiltroReserva.set('TODAS');
+            this.subfiltroFinalizado.set('TODAS');
+            this.alquilerRecienId.set(nuevo?.idAlquiler ?? null);
             this.paginaActual.set(1);
             this.alquilerService.cargar();
+            this.snackBar.open('Alquiler registrado.', 'Cerrar', { duration: 4000 });
           },
           error: (err) => this.mostrarError(err, 'registrar el alquiler'),
         });
@@ -762,6 +1006,38 @@ export class ListarAlquileresComponent implements OnInit {
   }
 
   // Check-out: inspección física, liquidación de daños y cierre del contrato
+  // El administrador evalúa los daños nuevos y se liquida la garantía
+  evaluarDanos(alquiler: Alquiler): void {
+    const ref = this.dialog.open(EvaluarDanosDialogComponent, {
+      width: '760px',
+      maxWidth: '96vw',
+      data: { alquiler },
+      autoFocus: false,
+    });
+    ref.afterClosed().subscribe((hecho?: boolean) => {
+      if (!hecho) return;
+      this.alquilerService.cargar();
+      this.pagoService.cargar();
+      this.snackBar.open('Evaluación registrada correctamente.', 'Cerrar', { duration: 4000 });
+    });
+  }
+
+  // Cobro de la deuda que superó la garantía
+  cobrarDeuda(alquiler: Alquiler): void {
+    const ref = this.dialog.open(CobrarDeudaDialogComponent, {
+      width: '480px',
+      maxWidth: '96vw',
+      data: { alquiler },
+      autoFocus: false,
+    });
+    ref.afterClosed().subscribe((hecho?: boolean) => {
+      if (!hecho) return;
+      this.alquilerService.cargar();
+      this.pagoService.cargar();
+      this.snackBar.open('Cobro registrado correctamente.', 'Cerrar', { duration: 4000 });
+    });
+  }
+
   abrirCheckout(alquiler: Alquiler): void {
     const ref = this.dialog.open(CheckoutInspeccionDialogComponent, {
       width: '500px',
@@ -774,40 +1050,11 @@ export class ListarAlquileresComponent implements OnInit {
       if (!acta) return;
       this.pagoService.cargar();
       this.alquilerService.cargar();
-      const alquilerActualizado: Alquiler = {
-        ...alquiler,
-        estado: {
-          ...alquiler.estado,
-          nombreEstado: acta.estadoAlquiler || 'FINALIZADO',
-        },
-        fechaCheckout: acta.fechaCheckout || new Date().toISOString(),
-        fechaFinReal: acta.fechaCheckout || new Date().toISOString(),
-        garantiaRetenida: acta.garantiaRetenida,
-        garantiaLiberada: acta.garantiaLiberada,
-      };
-      this.verActa(acta, alquilerActualizado);
+      // Solo cambia el estado del contrato: se avisa y se pasa a la tabla de finalizados (sin abrir el detalle)
+      this.filtrarPorEstado('FINALIZADO');
+      this.alquilerRecienId.set(alquiler.idAlquiler ?? null); // primero en Finalizados
+      this.snackBar.open('Recepción registrada. El contrato quedó finalizado.', 'Cerrar', { duration: 4000 });
     });
-  }
-
-  verActa(acta?: LiquidacionResponse, alquiler?: Alquiler): void {
-    this.dialog.open(ActaLiquidacionDialogComponent, {
-      width: '560px',
-      maxWidth: '96vw',
-      panelClass: 'modal-comprobante-dialog',
-      data: { acta, alquiler, pagado: alquiler ? this.esReservaPagada(alquiler) : true },
-    });
-  }
-
-  // Consulta del comprobante oficial de liquidación (auditoría / recepción)
-  consultarActa(alquiler: Alquiler): void {
-    if (alquiler.fechaCheckout) {
-      this.alquilerService.obtenerActa(alquiler.idAlquiler!).subscribe({
-        next: (acta) => this.verActa(acta, alquiler),
-        error: () => this.verActa(undefined, alquiler),
-      });
-    } else {
-      this.verActa(undefined, alquiler);
-    }
   }
 
   cancelar(alquiler: Alquiler): void {
@@ -828,7 +1075,10 @@ export class ListarAlquileresComponent implements OnInit {
       if (!confirmado) return;
 
       this.alquilerService.cancelar(alquiler.idAlquiler!).subscribe({
-        next: () => this.alquilerService.cargar(),
+        next: () => {
+          this.alquilerService.cargar();
+          this.snackBar.open('Contrato cancelado correctamente.', 'Cerrar', { duration: 4000 });
+        },
         error: (err) => this.mostrarError(err, 'cancelar el alquiler'),
       });
     });
@@ -848,7 +1098,10 @@ export class ListarAlquileresComponent implements OnInit {
     ref.afterClosed().subscribe((resultado: AprobarReservaResultado) => {
       if (resultado === 'APROBAR') {
         this.alquilerService.aprobar(alquiler.idAlquiler!).subscribe({
-          next: () => this.alquilerService.cargar(),
+          next: () => {
+            this.alquilerService.cargar();
+            this.snackBar.open('Reserva aprobada correctamente.', 'Cerrar', { duration: 4000 });
+          },
           error: (err) => this.mostrarError(err, 'aprobar la reserva'),
         });
       } else if (resultado === 'RECHAZAR') {
@@ -857,12 +1110,37 @@ export class ListarAlquileresComponent implements OnInit {
     });
   }
 
+  // Cancelar una reserva ya aprobada (con política de devolución)
+  cancelarReserva(alquiler: Alquiler): void {
+    const ref = this.dialog.open(CancelarReservaDialogComponent, {
+      width: '640px',
+      maxWidth: '96vw',
+      data: { alquiler },
+      autoFocus: false,
+    });
+    ref.afterClosed().subscribe((res?: { accion: string; mensaje: string }) => {
+      if (!res) return;
+      this.alquilerService.cargar();
+      this.pagoService.cargar();
+      // Mensaje simple; solo se conserva el texto del sistema cuando hay un aviso que atender
+      const detalle = res.accion === 'CANCELADA' && !res.mensaje.includes('Ojo') ? 'Reserva cancelada correctamente.' : res.mensaje;
+      this.snackBar.open(detalle, 'Cerrar', { duration: 4000 });
+    });
+  }
+
   // Rechazo formal con causal justificada y correo al cliente
   rechazar(alquiler: Alquiler): void {
     const ref = this.dialog.open(RechazoReservaDialogComponent, {
       width: '620px',
       maxWidth: '96vw',
-      data: { alquiler },
+      data: {
+        alquiler,
+        tuvoAlquileres: this.alquileres().some(
+          (o) => o.idAlquiler !== alquiler.idAlquiler && o.cliente?.idCliente === alquiler.cliente?.idCliente
+            && ['RESERVADO', 'PAGADO', 'CONFIRMADO', 'ACTIVO', 'FINALIZADO', 'CERRADO_CON_DEUDA', 'CANCELADO']
+              .includes((o.estado?.nombreEstado || '').toUpperCase())
+        ),
+      },
       autoFocus: false,
     });
 
@@ -871,59 +1149,41 @@ export class ListarAlquileresComponent implements OnInit {
       .subscribe((request: RechazoReservaRequest | undefined) => {
         if (!request) return;
         this.alquilerService.rechazar(alquiler.idAlquiler!, request).subscribe({
-          next: () => this.alquilerService.cargar(),
+          next: () => {
+            this.alquilerService.cargar();
+            this.snackBar.open('Reserva rechazada correctamente.', 'Cerrar', { duration: 4000 });
+          },
           error: (err) => this.mostrarError(err, 'rechazar la reserva'),
         });
       });
   }
 
-  // Entrega rápida de llaves en counter para reservas ya pagadas
+  // Entrega de llaves en counter: acta con verificación de documentos y conformidad del vehículo
 
   entregarLlaves(alquiler: Alquiler): void {
-    if (this.esFechaFutura(alquiler.fechaInicio)) {
-      const hora = alquiler.horaRecojo
-        ? ` a las ${alquiler.horaRecojo} hrs`
-        : '';
+    if (entregaAunNoHabilitada(alquiler)) {
       this.snackBar.open(
-        `Operación bloqueada: No es posible entregar llaves ni activar ruta antes de la fecha pactada. Fecha programada de recojo: ${alquiler.fechaInicio}${hora}.`,
+        `Todavía no se puede entregar: la entrega se habilita el ${textoEntregaDesde(alquiler)} (${MINUTOS_ENTREGA_ANTICIPADA} minutos antes de la hora pactada).`,
         'Entendido',
         { duration: 7000 },
       );
       return;
     }
 
-    const clienteNombre = `${alquiler.cliente?.nombres ?? ''} ${alquiler.cliente?.apellidos ?? ''}`.trim() || 'el cliente';
-    const vehiculoNombre = this.nombreVehiculo(alquiler);
-    const placa = alquiler.placa || alquiler.vehiculoUnidad?.placa || (alquiler as any).vehiculo?.placa;
-    const placaTexto = placa ? ` (Placa: ${placa})` : '';
-
-    const data: ConfirmDialogData = {
-      titulo: 'Entregar Llaves y Activar Contrato',
-      subtitulo: 'Entrega de vehículo e inicio de ruta',
-      mensaje: `¿Deseas confirmar la entrega de llaves e inicio de ruta?
-
-• Cliente: ${clienteNombre}
-• Vehículo: ${vehiculoNombre}${placaTexto}
-• Garantía: Depósito retenido en POS
-
-El vehículo pasará inmediatamente al estado En ruta.`,
-      textoConfirmar: 'Sí, Entregar Llaves y Activar',
-      textoCancelar: 'Cancelar',
-      tipo: 'finalizar',
-    };
-
-    const ref = this.dialog.open(ConfirmDialogComponent, {
-      data,
-      width: '500px',
+    const ref = this.dialog.open(EntregaLlavesDialogComponent, {
+      width: '680px',
+      maxWidth: '96vw',
+      data: { alquiler },
+      autoFocus: false,
     });
 
-    ref.afterClosed().subscribe((confirmado) => {
-      if (!confirmado) return;
-
-      this.alquilerService.entregarLlaves(alquiler.idAlquiler!).subscribe({
-        next: () => this.alquilerService.cargar(),
-        error: (err) => this.mostrarError(err, 'entregar las llaves'),
-      });
+    ref.afterClosed().subscribe((entregado) => {
+      if (entregado) {
+        this.alquilerService.cargar();
+        this.filtrarPorEstado('ACTIVO');
+        this.alquilerRecienId.set(alquiler.idAlquiler ?? null); // primero en la tabla de En ruta
+        this.snackBar.open('Llaves entregadas. El contrato quedó activo (en ruta).', 'Cerrar', { duration: 4000 });
+      }
     });
   }
 
