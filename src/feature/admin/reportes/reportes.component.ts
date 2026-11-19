@@ -1,149 +1,212 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
+import { of } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { FilaMonto, ReporteEjecutivo } from '../../../core/models/reporte.model';
+import { FilaMonto, ReporteEjecutivo, UnidadOpcion } from '../../../core/models/reporte.model';
 import { ReporteService } from '../../../core/service/reporte.service';
+import { descargarBlob } from '../../../core/utils/descarga.util';
 import { BackButtonComponent } from '../../../shared/components/back-button/back-button.component';
+import { VisorPdfDialogComponent } from '../../../shared/components/visor-pdf-dialog/visor-pdf-dialog.component';
 
-// Dashboard de Business Intelligence automotriz (exclusivo admin)
+type Vista = 'RESUMEN' | 'GENERAR';
+type Rango = 'HOY' | 'AYER' | 'SEMANA' | 'MES' | 'MES_ANTERIOR' | 'PERSONALIZADO';
+
+// Reportes en dos pestañas: un resumen con los indicadores y un formulario simple para generar el reporte
 @Component({
   selector: 'app-reportes',
   standalone: true,
-  imports: [
-    DecimalPipe,
-    FormsModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    MatSelectModule,
-    MatTooltipModule,
-    BackButtonComponent
-  ],
+  imports: [DecimalPipe, FormsModule, MatIconModule, BackButtonComponent],
   templateUrl: './reportes.component.html',
   styleUrls: ['./reportes.component.css']
 })
 export class ReportesComponent implements OnInit {
   private readonly reporteService = inject(ReporteService);
+  private readonly dialog = inject(MatDialog);
 
-  // Filtros (por defecto: mes en curso con fecha local)
-  desde = this.primerDiaDelMes();
-  hasta = this.hoyLocal();
-  sede = 'TODAS';
-  categoria = 'TODAS';
+  readonly vista = signal<Vista>('RESUMEN');
+
+  // ───────── Periodo (compartido por las dos pestañas) ─────────
+  readonly rangos: { valor: Rango; titulo: string }[] = [
+    { valor: 'HOY', titulo: 'Hoy' },
+    { valor: 'AYER', titulo: 'Ayer' },
+    { valor: 'SEMANA', titulo: 'Últimos 7 días' },
+    { valor: 'MES', titulo: 'Este mes' },
+    { valor: 'MES_ANTERIOR', titulo: 'Mes anterior' }
+  ];
+  readonly rango = signal<Rango>('HOY');
+  readonly desde = signal(this.formato(new Date()));
+  readonly hasta = signal(this.formato(new Date()));
+
+  // ───────── Pestaña Resumen ─────────
+  readonly resumen = signal<ReporteEjecutivo | null>(null);
+  readonly cargando = signal(false);
+  // Flota más alquilada: solo unidades con placa, ordenadas por número de alquileres y luego por ingreso
+  readonly topVehiculos = computed(() =>
+    (this.resumen()?.topVehiculos ?? [])
+      .filter((v) => Number(v.alquileres) > 0 && !(v.placa ?? '').startsWith('Sin placa'))
+      .sort((a, b) => Number(b.alquileres) - Number(a.alquileres) || Number(b.ingresos) - Number(a.ingresos))
+      .slice(0, 6)
+  );
+
+  // ───────── Pestaña Generar reporte ─────────
+  readonly unidades = signal<UnidadOpcion[]>([]);
+  readonly modelo = signal('TODOS');
+  readonly placa = signal('TODAS');
+  readonly placaAbierta = signal(false);
+
+  elegirPlaca(p: string): void {
+    this.placa.set(p);
+    this.placaAbierta.set(false);
+  }
+  readonly modelos = computed(() => [...new Set(this.unidades().map((u) => u.nombre))].sort());
+  readonly placas = computed(() =>
+    this.unidades()
+      .filter((u) => this.modelo() === 'TODOS' || u.nombre === this.modelo())
+      .map((u) => u.placa)
+      .sort()
+  );
+  readonly cliente = signal('');
+  readonly estado = signal('CON_PAGO');
+  readonly sede = signal('TODAS');
+  readonly metodo = signal('TODOS');
+  readonly generando = signal(false);
+  readonly error = signal<string | null>(null);
 
   readonly sedes = [
-    { valor: 'TODAS', titulo: 'Todas las sedes' },
+    { valor: 'TODAS', titulo: 'Todas' },
     { valor: 'MIRAFLORES', titulo: 'Miraflores' },
     { valor: 'AEROPUERTO', titulo: 'Aeropuerto' }
   ];
-  readonly categorias = ['TODAS', 'HATCHBACK', 'SEDAN', 'SUV', 'PICKUP'];
+  readonly metodos = ['TODOS', 'Efectivo', 'Tarjeta', 'Yape', 'Plin', 'Transferencia'];
 
-  readonly reporte = signal<ReporteEjecutivo | null>(null);
-  readonly cargando = signal(false);
-  readonly error = signal<string | null>(null);
+  readonly estados = [
+    { valor: 'CON_PAGO', titulo: 'Con pago (pagados, en ruta y finalizados)' },
+    { valor: 'TODOS', titulo: 'Todos (incluye pendientes y anulados)' },
+    { valor: 'PENDIENTE', titulo: 'Solicitudes pendientes' },
+    { valor: 'POR_PAGAR', titulo: 'Reservados por pagar' },
+    { valor: 'PAGADO', titulo: 'Reservados y pagados' },
+    { valor: 'EN_RUTA', titulo: 'En ruta' },
+    { valor: 'FINALIZADO', titulo: 'Finalizados' },
+    { valor: 'ANULADO', titulo: 'Anulados' }
+  ];
 
   ngOnInit(): void {
-    this.consultar();
+    this.reporteService.unidades().subscribe({ next: (u) => this.unidades.set(u), error: () => this.unidades.set([]) });
+    this.cargarResumen();
   }
 
-  consultar(): void {
+  elegirRango(r: Rango): void {
+    this.rango.set(r);
+    const hoy = new Date();
+    if (r === 'HOY') this.fijar(hoy, hoy);
+    else if (r === 'AYER') {
+      const a = new Date(hoy);
+      a.setDate(hoy.getDate() - 1);
+      this.fijar(a, a);
+    } else if (r === 'SEMANA') {
+      const a = new Date(hoy);
+      a.setDate(hoy.getDate() - 6);
+      this.fijar(a, hoy);
+    } else if (r === 'MES') this.fijar(new Date(hoy.getFullYear(), hoy.getMonth(), 1), hoy);
+    else if (r === 'MES_ANTERIOR') this.fijar(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1), new Date(hoy.getFullYear(), hoy.getMonth(), 0));
+    this.cargarResumen();
+  }
+
+  cambiarFecha(campo: 'desde' | 'hasta', valor: string): void {
+    if (!valor) return;
+    (campo === 'desde' ? this.desde : this.hasta).set(valor);
+    this.rango.set('PERSONALIZADO');
+    if (this.desde() <= this.hasta()) this.cargarResumen();
+  }
+
+  cambiarModelo(valor: string): void {
+    this.modelo.set(valor);
+    this.placa.set('TODAS');
+  }
+
+  private fijar(a: Date, b: Date): void {
+    this.desde.set(this.formato(a));
+    this.hasta.set(this.formato(b));
+  }
+
+  cargarResumen(): void {
     this.cargando.set(true);
+    this.reporteService.ejecutivo({ desde: this.desde(), hasta: this.hasta() }).subscribe({
+      next: (r) => {
+        this.resumen.set(r);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.resumen.set(null);
+        this.cargando.set(false);
+      }
+    });
+  }
+
+  anchoBarra(f: FilaMonto, filas: FilaMonto[]): number {
+    const max = Math.max(...filas.map((x) => Number(x.total)), 0);
+    return max > 0 ? Math.max(4, (Number(f.total) / max) * 100) : 0;
+  }
+
+  periodoTexto(): string {
+    const f = (iso: string) => iso.split('-').reverse().join('/');
+    return this.desde() === this.hasta() ? f(this.desde()) : `${f(this.desde())} al ${f(this.hasta())}`;
+  }
+
+  // ───────── Generar ─────────
+  generar(formato: 'pdf' | 'excel'): void {
     this.error.set(null);
-    this.reporteService
-      .ejecutivo({ desde: this.desde, hasta: this.hasta, sede: this.sede, categoria: this.categoria })
-      .subscribe({
-        next: (r) => {
-          this.reporte.set(r);
-          this.cargando.set(false);
-        },
-        error: (err) => {
-          this.cargando.set(false);
-          this.error.set(err?.error?.message || 'No se pudo cargar el reporte.');
+    if (this.desde() > this.hasta()) {
+      this.error.set('La fecha «Desde» no puede ser posterior a «Hasta».');
+      return;
+    }
+    const filtro = {
+      desde: this.desde(),
+      hasta: this.hasta(),
+      modelo: this.modelo(),
+      placa: this.placa(),
+      q: this.cliente(),
+      estado: this.estado(),
+      sede: this.sede(),
+      metodo: this.metodo()
+    };
+    const rango = this.desde() === this.hasta() ? this.desde() : `${this.desde()}_a_${this.hasta()}`;
+
+    this.generando.set(true);
+    this.reporteService.resumen(formato, filtro).subscribe({
+      next: (blob) => {
+        this.generando.set(false);
+        if (!blob || blob.size === 0) {
+          this.error.set('No hay contratos registrados en ese periodo con los filtros elegidos.');
+          return;
         }
-      });
+        if (formato === 'excel') {
+          descargarBlob(blob, `Reporte-PaulCars_${rango}.xlsx`);
+          return;
+        }
+        this.dialog.open(VisorPdfDialogComponent, {
+          width: '900px',
+          maxWidth: '96vw',
+          data: {
+            titulo: 'Reporte de contratos',
+            subtitulo: this.periodoTexto(),
+            pdf$: of(blob),
+            nombreArchivo: `Reporte-PaulCars_${rango}.pdf`
+          }
+        });
+      },
+      error: () => {
+        this.generando.set(false);
+        this.error.set('No se pudo generar el reporte. Inténtelo nuevamente.');
+      }
+    });
   }
 
-  limpiar(): void {
-    this.desde = this.primerDiaDelMes();
-    this.hasta = this.hoyLocal();
-    this.sede = 'TODAS';
-    this.categoria = 'TODAS';
-    this.consultar();
-  }
-
-  // Los tres gráficos de barras del dashboard
-  graficos(r: ReporteEjecutivo): { titulo: string; filas: FilaMonto[] }[] {
-    return [
-      { titulo: 'Ingresos por sede', filas: r.ingresosPorSede },
-      { titulo: 'Ingresos por categoría', filas: r.ingresosPorCategoria },
-      { titulo: 'Arqueo de caja por método de pago', filas: r.ingresosPorMetodo }
-    ];
-  }
-
-  // Ancho de cada barra del gráfico respecto a la barra más grande
-  anchoBarra(fila: FilaMonto, filas: FilaMonto[]): number {
-    const max = Math.max(...filas.map((f) => Number(f.total)), 0);
-    return max > 0 ? Math.max(4, (Number(fila.total) / max) * 100) : 0;
-  }
-
-  // Exporta KPIs y el top de vehículos a un CSV que abre Excel
-  exportarCsv(): void {
-    const r = this.reporte();
-    if (!r) return;
-    const filas: (string | number)[][] = [
-      ['Reporte ejecutivo Paul Cars'],
-      ['Periodo', `${r.desde} a ${r.hasta}`],
-      ['Sede', r.sede],
-      ['Categoría', r.categoria],
-      [],
-      ['KPI', 'Valor'],
-      ['Ingresos totales (S/)', r.ingresosTotales],
-      ['Ocupación de flota (%)', r.ocupacionFlota],
-      ['Ticket promedio (S/)', r.ticketPromedio],
-      ['Contratos iniciados', r.alquileresEnPeriodo],
-      ['Contratos finalizados', r.alquileresFinalizados],
-      ['Total días alquilados', r.diasTotalesAlquilados],
-      [],
-      ['Vehículo', 'Placa', 'Categoría', 'Alquileres', 'Días alquilados', 'Ingresos (S/)', 'Utilización (%)'],
-      ...r.topVehiculos.map((v) => [v.vehiculo, v.placa, v.categoria, v.alquileres, v.diasAlquilados, v.ingresos, v.utilizacion]),
-      [],
-      ['Arqueo por método de pago', 'Operaciones', 'Total (S/)'],
-      ...r.ingresosPorMetodo.map((m) => [m.etiqueta, m.cantidad, m.total])
-    ];
-    // Punto y coma: Excel en español lo separa en columnas sin configurar nada
-    const csv = filas
-      .map((fila) => fila.map((celda) => `"${String(celda ?? '').replace(/"/g, '""')}"`).join(';'))
-      .join('\r\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reporte-paulcars-${r.desde}-a-${r.hasta}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  private hoyLocal(): string {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  private primerDiaDelMes(): string {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}-01`;
+  private formato(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 }
