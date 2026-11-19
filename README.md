@@ -69,7 +69,3 @@ src/
 ├── shared/       # Componentes reutilizables
 └── environments/ # Configuración por entorno
 ```
-
-## Autor
-
-Proyecto universitario desarrollado por Jeremy Martínez ([@JeremyMartinezx](https://github.com/JeremyMartinezx)).
