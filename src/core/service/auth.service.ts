@@ -5,6 +5,16 @@ import { Router } from '@angular/router';
 import { LoginRequest, LoginResponse, UsuarioSesion } from '../models/auth.models';
 import { Observable, tap } from 'rxjs';
 
+export interface PerfilPersonal {
+  username: string;
+  rol: string;
+  nombre: string;
+  email: string;
+  nombres?: string | null;
+  apellidos?: string | null;
+  dni?: string | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -95,6 +105,15 @@ export class AuthService {
     };
     localStorage.setItem(this.userKey, JSON.stringify(usuario));
     this.usuarioSignal.set(usuario);
+  }
+
+  // Datos propios del personal (nombres, apellidos y DNI por separado)
+  obtenerPerfilPersonal() {
+    return this.http.get<PerfilPersonal>(`${this.apiUrl}/me`);
+  }
+
+  actualizarPerfilPersonal(datos: { nombres: string; apellidos: string; dni: string }) {
+    return this.http.put<PerfilPersonal>(`${this.apiUrl}/me/perfil`, datos);
   }
 
   // Vuelve a pedir nombre y correo al backend (GET /api/auth/me).
