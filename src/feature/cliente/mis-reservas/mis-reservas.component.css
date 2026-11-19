@@ -1720,3 +1720,163 @@
     justify-content: center;
   }
 }
+
+/* ───── Columnas Detalle y Comprobante (cada una con su propio ancho) ───── */
+.reservas-table {
+  min-width: 920px;
+}
+
+.reservas-table th.col-vehiculo,
+.reservas-table td.col-vehiculo { width: 24%; }
+.reservas-table th.col-periodo,
+.reservas-table td.col-periodo { width: 22%; }
+.reservas-table th.col-estado,
+.reservas-table td.col-estado { width: 16%; }
+.reservas-table th.col-accion,
+.reservas-table td.col-accion { width: 14%; }
+
+.reservas-table th.col-detalle,
+.reservas-table td.col-detalle,
+.reservas-table th.col-comprobante,
+.reservas-table td.col-comprobante {
+  width: 12%;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  text-align: center !important;
+}
+
+.reservas-table thead th.col-detalle {
+  text-align: center !important;
+}
+
+.reservas-table.sin-col-accion th.col-vehiculo,
+.reservas-table.sin-col-accion td.col-vehiculo { width: 28%; }
+.reservas-table.sin-col-accion th.col-periodo,
+.reservas-table.sin-col-accion td.col-periodo { width: 24%; }
+.reservas-table.sin-col-accion th.col-estado,
+.reservas-table.sin-col-accion td.col-estado { width: 16%; }
+.reservas-table.sin-col-accion th.col-detalle,
+.reservas-table.sin-col-accion td.col-detalle,
+.reservas-table.sin-col-accion th.col-comprobante,
+.reservas-table.sin-col-accion td.col-comprobante { width: 16%; }
+
+/* ───── Orden de la tabla ───── */
+.btn-orden .ic-orden {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: #64748b;
+}
+
+::ng-deep .menu-orden-panel {
+  min-width: 250px !important;
+  border-radius: 10px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08) !important;
+  padding: 6px 0 !important;
+  background: #ffffff !important;
+}
+
+::ng-deep .menu-orden-panel .menu-grupo-header {
+  padding: 8px 16px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  user-select: none;
+}
+
+::ng-deep .menu-orden-panel button.mat-mdc-menu-item {
+  min-height: 38px;
+  font-size: 13.5px;
+  color: #334155;
+}
+
+::ng-deep .menu-orden-panel button.mat-mdc-menu-item.opcion-seleccionada {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+::ng-deep .menu-orden-panel .item-check {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: #1d4ed8;
+}
+
+/* ───── Periodo y registro compactos ───── */
+.periodo-compacto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.periodo-fechas {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.flecha-periodo {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: #94a3b8;
+}
+
+.periodo-sub {
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
+.registro-fecha {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.reservas-table th.col-registro,
+.reservas-table td.col-registro {
+  padding-left: 0.75rem;
+  padding-right: 0.5rem;
+}
+
+/* ───── Anchos con la columna Registro ───── */
+.reservas-table {
+  min-width: 1060px;
+}
+
+.reservas-table th.col-vehiculo,
+.reservas-table td.col-vehiculo { width: 20%; }
+.reservas-table th.col-periodo,
+.reservas-table td.col-periodo { width: 13%; }
+.reservas-table th.col-registro,
+.reservas-table td.col-registro { width: 14%; }
+.reservas-table th.col-estado,
+.reservas-table td.col-estado { width: 15%; }
+.reservas-table th.col-accion,
+.reservas-table td.col-accion { width: 12%; }
+.reservas-table th.col-detalle,
+.reservas-table td.col-detalle,
+.reservas-table th.col-comprobante,
+.reservas-table td.col-comprobante { width: 13%; }
+
+.reservas-table.sin-col-accion th.col-vehiculo,
+.reservas-table.sin-col-accion td.col-vehiculo { width: 22%; }
+.reservas-table.sin-col-accion th.col-periodo,
+.reservas-table.sin-col-accion td.col-periodo { width: 14%; }
+.reservas-table.sin-col-accion th.col-registro,
+.reservas-table.sin-col-accion td.col-registro { width: 16%; }
+.reservas-table.sin-col-accion th.col-estado,
+.reservas-table.sin-col-accion td.col-estado { width: 16%; }
+.reservas-table.sin-col-accion th.col-detalle,
+.reservas-table.sin-col-accion td.col-detalle,
+.reservas-table.sin-col-accion th.col-comprobante,
+.reservas-table.sin-col-accion td.col-comprobante { width: 16%; }
