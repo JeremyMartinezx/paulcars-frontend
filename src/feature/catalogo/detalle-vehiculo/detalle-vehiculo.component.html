@@ -193,8 +193,8 @@
                   [ngModel]="sedeRecojo()"
                   (ngModelChange)="onSedeRecojoChange($event)"
                 >
-                  <option value="MIRAFLORES">Miraflores - Av. 28 de Julio 489</option>
-                  <option value="AEROPUERTO">Aeropuerto Internacional Jorge Chávez</option>
+                  <option value="MIRAFLORES" [disabled]="sinStockSede('MIRAFLORES')">Miraflores - Av. 28 de Julio 489{{ sinStockSede('MIRAFLORES') ? ' (sin disponibilidad)' : '' }}</option>
+                  <option value="AEROPUERTO" [disabled]="sinStockSede('AEROPUERTO')">Aeropuerto Internacional Jorge Chávez{{ sinStockSede('AEROPUERTO') ? ' (sin disponibilidad)' : '' }}</option>
                 </select>
                 <small class="sede-detail-schedule">
                   {{ sedeRecojo() === 'AEROPUERTO' ? 'Atención las 24 horas' : 'Lun-Vie 08:30-18:00, Sáb 09:00-17:00' }}
