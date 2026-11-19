@@ -1,0 +1,54 @@
+<div class="visor">
+  <header class="visor-cabecera">
+    <div class="visor-titulo">
+      <mat-icon>description</mat-icon>
+      <div>
+        <h2 mat-dialog-title>{{ actual.titulo }}</h2>
+        @if (actual.subtitulo) {
+          <span>{{ actual.subtitulo }}</span>
+        }
+      </div>
+    </div>
+    <button mat-icon-button type="button" (click)="cerrar()" aria-label="Cerrar">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  @if (documentos.length > 1) {
+    <nav class="visor-pestanas" aria-label="Documentos del contrato">
+      @for (d of documentos; track d.etiqueta; let i = $index) {
+        <button type="button" [class.activa]="i === seleccionado()" (click)="elegir(i)">{{ d.etiqueta }}</button>
+      }
+    </nav>
+  }
+
+  <mat-dialog-content class="visor-cuerpo">
+    @if (cargando()) {
+      <div class="visor-estado">
+        <mat-spinner diameter="38"></mat-spinner>
+        <p>Generando documento...</p>
+      </div>
+    } @else if (error()) {
+      <div class="visor-estado error">
+        <mat-icon>error_outline</mat-icon>
+        <p>No se pudo generar el documento. Inténtalo nuevamente desde el detalle del contrato.</p>
+      </div>
+    } @else {
+      <iframe #visor class="visor-iframe" [src]="url()" title="Documento PDF"></iframe>
+    }
+  </mat-dialog-content>
+
+  @if (data.aviso) {
+    <p class="visor-aviso">
+      <mat-icon>forward_to_inbox</mat-icon>
+      <span>{{ data.aviso }}</span>
+    </p>
+  }
+
+  <mat-dialog-actions align="end" class="visor-acciones">
+    <button mat-button type="button" (click)="cerrar()">Cerrar</button>
+    <button mat-flat-button class="btn-descargar" type="button" (click)="descargar()" [disabled]="cargando() || error()">
+      <mat-icon>download</mat-icon> Descargar PDF
+    </button>
+  </mat-dialog-actions>
+</div>

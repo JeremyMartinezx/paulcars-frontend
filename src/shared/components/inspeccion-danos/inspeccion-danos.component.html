@@ -1,0 +1,101 @@
+<div class="insp">
+  @if (referencia().length > 0) {
+    <div class="insp-ref">
+      <span class="insp-ref-titulo">{{ tituloReferencia() }}</span>
+      @for (d of referencia(); track d.idDano) {
+        <div class="insp-ref-fila">
+          <img [src]="foto(d.fotoUrl)" alt="Foto del daño" />
+          <span><strong>{{ etiquetaZona(d.zona) }}</strong> · {{ etiquetaTipo(d.tipo) }} ({{ etiquetaGravedad(d.gravedad).toLowerCase() }}) — {{ d.descripcion }}</span>
+        </div>
+      }
+    </div>
+  }
+
+  @if (hayDanos()) {
+    <ul class="insp-lista">
+      @for (d of danos(); track $index) {
+        <li class="insp-item">
+          <a [href]="foto(d.fotoUrl)" target="_blank" rel="noopener" title="Ver foto completa">
+            <img [src]="foto(d.fotoUrl)" alt="Foto del daño" />
+          </a>
+          <div class="insp-item-txt">
+            <strong>{{ etiquetaZona(d.zona) }} · {{ etiquetaTipo(d.tipo) }}</strong>
+            <span class="insp-grav" [attr.data-g]="d.gravedad">{{ etiquetaGravedad(d.gravedad) }}</span>
+            <p>{{ d.descripcion }}</p>
+          </div>
+          <button type="button" class="insp-quitar" (click)="quitar($index)" aria-label="Quitar daño">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </li>
+      }
+    </ul>
+  } @else if (!abierto() && textoSinDanos()) {
+    <p class="insp-vacio">{{ textoSinDanos() }}</p>
+  }
+
+  @if (abierto()) {
+    <div class="insp-form">
+      <div class="insp-fila">
+        <label>Zona
+          <select [(ngModel)]="zona">
+            @for (z of zonas; track z.valor) { <option [value]="z.valor">{{ z.etiqueta }}</option> }
+          </select>
+        </label>
+        <label>Tipo de daño
+          <select [(ngModel)]="tipo">
+            @for (t of tipos; track t.valor) { <option [value]="t.valor">{{ t.etiqueta }}</option> }
+          </select>
+        </label>
+        <label>Gravedad
+          <select [(ngModel)]="gravedad">
+            @for (g of gravedades; track g.valor) { <option [value]="g.valor">{{ g.etiqueta }}</option> }
+          </select>
+        </label>
+      </div>
+
+      <label>Descripción
+        <input type="text" maxlength="500" placeholder="Ej.: Rayón de unos 20 cm en la puerta delantera" [(ngModel)]="descripcion" />
+      </label>
+
+      <div class="insp-foto">
+        @if (fotoUrl()) {
+          <div class="insp-foto-prev">
+            <a [href]="foto(fotoUrl())" target="_blank" rel="noopener" class="insp-foto-link" title="Ver foto completa">
+              <img [src]="foto(fotoUrl())" alt="Foto del daño" />
+            </a>
+            <div class="insp-foto-acc">
+              <span class="insp-foto-ok"><mat-icon>check_circle</mat-icon> Foto adjuntada</span>
+              <label class="insp-btn insp-btn-foto" [class.ocupado]="subiendo()">
+                <mat-icon>cached</mat-icon><span>{{ subiendo() ? 'Subiendo...' : 'Cambiar foto' }}</span>
+                <input type="file" accept="image/png,image/jpeg,image/webp" (change)="elegirFoto($event)" [disabled]="subiendo()" hidden />
+              </label>
+              <button type="button" class="insp-btn insp-btn-foto eliminar" (click)="quitarFoto()">
+                <mat-icon>delete</mat-icon><span>Eliminar foto</span>
+              </button>
+            </div>
+          </div>
+        } @else {
+          <label class="insp-subir" [class.ocupado]="subiendo()">
+            <mat-icon>add_a_photo</mat-icon>
+            <span>{{ subiendo() ? 'Subiendo foto...' : 'Adjuntar foto del daño' }}</span>
+            <input type="file" accept="image/png,image/jpeg,image/webp" (change)="elegirFoto($event)" [disabled]="subiendo()" hidden />
+          </label>
+        }
+      </div>
+
+      @if (error()) {
+        <p class="insp-error">{{ error() }}</p>
+      }
+
+      <div class="insp-acciones">
+        <button type="button" class="insp-btn" (click)="cancelar()">Cancelar</button>
+        <button type="button" class="insp-btn primario" (click)="agregar()" [disabled]="subiendo()">Agregar daño</button>
+      </div>
+    </div>
+  } @else {
+    <button type="button" class="insp-agregar" (click)="abrir()">
+      <mat-icon>add</mat-icon>
+      <span>Registrar un daño</span>
+    </button>
+  }
+</div>
