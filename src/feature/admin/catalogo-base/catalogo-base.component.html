@@ -88,6 +88,9 @@
                         <button mat-icon-button class="btn-edit" (click)="iniciarEdicionSimple('marca', marca.idMarca, marca.nombreMarca)" matTooltip="Editar marca">
                           <mat-icon>edit</mat-icon>
                         </button>
+                        <button mat-icon-button class="btn-delete" (click)="eliminar('marcas', marca.idMarca, marca.nombreMarca)" matTooltip="Eliminar marca">
+                          <mat-icon>delete</mat-icon>
+                        </button>
                       }
                     </td>
                   </tr>
@@ -117,17 +120,17 @@
           @if (esAdmin()) {
             <div class="barra-agregar grid-modelo">
               <mat-form-field appearance="outline">
-                <mat-label>Nombre del modelo</mat-label>
-                <input matInput [(ngModel)]="nuevoModeloNombre" placeholder="Ej: Civic, Frontier, Tucson">
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
                 <mat-label>Marca asociada</mat-label>
                 <mat-select [(ngModel)]="nuevoModeloMarcaId">
                   @for (marca of catalogos.marcas; track marca.idMarca) {
                     <mat-option [value]="marca.idMarca">{{ marca.nombreMarca }}</mat-option>
                   }
                 </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Nombre del modelo</mat-label>
+                <input matInput [(ngModel)]="nuevoModeloNombre" placeholder="Ej: Civic, Frontier, Tucson">
               </mat-form-field>
 
               <button mat-flat-button color="primary" class="btn-agregar" (click)="agregarModelo()" [disabled]="!nuevoModeloNombre.trim() || !nuevoModeloMarcaId">
@@ -161,23 +164,14 @@
             <table class="catalogo-table" aria-label="Tabla de Modelos">
               <thead>
                 <tr>
-                  <th scope="col">MODELO COMERCIAL</th>
                   <th scope="col">MARCA ASOCIADA</th>
+                  <th scope="col">MODELO COMERCIAL</th>
                   <th scope="col" style="width: 140px; text-align: center;">ACCIONES</th>
                 </tr>
               </thead>
               <tbody>
                 @for (modelo of modelosFiltrados(); track modelo.idModelo) {
                   <tr>
-                    <td>
-                      @if (editandoModelo?.id === modelo.idModelo) {
-                        <mat-form-field appearance="outline" class="inline-field">
-                          <input matInput [(ngModel)]="editandoModelo!.nombre" (keyup.enter)="guardarEdicionModelo()">
-                        </mat-form-field>
-                      } @else {
-                        <span class="item-nombre">{{ modelo.modelo }}</span>
-                      }
-                    </td>
                     <td>
                       @if (editandoModelo?.id === modelo.idModelo) {
                         <div class="edicion-row">
@@ -199,10 +193,22 @@
                         <span class="marca-texto">{{ modelo.marca?.nombreMarca }}</span>
                       }
                     </td>
+                    <td>
+                      @if (editandoModelo?.id === modelo.idModelo) {
+                        <mat-form-field appearance="outline" class="inline-field">
+                          <input matInput [(ngModel)]="editandoModelo!.nombre" (keyup.enter)="guardarEdicionModelo()">
+                        </mat-form-field>
+                      } @else {
+                        <span class="item-nombre">{{ modelo.modelo }}</span>
+                      }
+                    </td>
                     <td style="text-align: center;">
                       @if (esAdmin() && editandoModelo?.id !== modelo.idModelo) {
                         <button mat-icon-button class="btn-edit" (click)="iniciarEdicionModelo(modelo.idModelo, modelo.modelo, modelo.marca.idMarca)" matTooltip="Editar modelo">
                           <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button class="btn-delete" (click)="eliminar('modelos', modelo.idModelo, modelo.modelo)" matTooltip="Eliminar modelo">
+                          <mat-icon>delete</mat-icon>
                         </button>
                       }
                     </td>
@@ -276,6 +282,9 @@
                         <button mat-icon-button class="btn-edit" (click)="iniciarEdicionSimple('tipo', tipo.idTipo, tipo.nombreTipo)" matTooltip="Editar categoría">
                           <mat-icon>edit</mat-icon>
                         </button>
+                        <button mat-icon-button class="btn-delete" (click)="eliminar('tipos-vehiculo', tipo.idTipo, tipo.nombreTipo)" matTooltip="Eliminar categoría">
+                          <mat-icon>delete</mat-icon>
+                        </button>
                       }
                     </td>
                   </tr>
@@ -347,6 +356,9 @@
                       @if (esAdmin() && editandoSimple?.id !== combustible.idCombustible) {
                         <button mat-icon-button class="btn-edit" (click)="iniciarEdicionSimple('combustible', combustible.idCombustible, combustible.nombreCombustible)" matTooltip="Editar combustible">
                           <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button class="btn-delete" (click)="eliminar('combustibles', combustible.idCombustible, combustible.nombreCombustible)" matTooltip="Eliminar combustible">
+                          <mat-icon>delete</mat-icon>
                         </button>
                       }
                     </td>
