@@ -54,6 +54,16 @@ export class CatalogoVehiculosComponent implements OnInit {
   readonly horaDevolucionParam = signal<string>('');
   readonly diasCalculadosParam = signal<number>(0);
 
+  /** Unidades libres por modelo y sede para las fechas buscadas (se usa para ocultar lo que no hay en esa sede). */
+  readonly dispPorModelo = signal<Record<string, Record<string, number>>>({});
+
+  private cargarDisponibilidad(): void {
+    this.vehiculoService.disponibilidadSedes(this.fechaRecojoParam() || undefined, this.fechaDevolucionParam() || undefined).subscribe({
+      next: (m) => this.dispPorModelo.set(m),
+      error: () => this.dispPorModelo.set({})
+    });
+  }
+
   readonly busquedaActiva = computed(() => {
     return this.sedeFiltro() !== 'TODAS' || !!this.fechaRecojoParam() || !!this.terminoBusqueda();
   });
@@ -87,6 +97,10 @@ export class CatalogoVehiculosComponent implements OnInit {
       .filter((v) => {
         if (!sede || sede === 'TODAS') return true;
         const sUpper = sede.toUpperCase();
+        const disp = this.dispPorModelo();
+        if (Object.keys(disp).length > 0) {
+          return (disp[String(v.idVehiculo ?? v.idModelo)]?.[sUpper] ?? 0) > 0;
+        }
         const tieneUnidadDisponibleEnSede = v.unidades?.some(
           (u) => (u.sede || '').toUpperCase() === sUpper && (u.estado?.nombreEstado || '').toUpperCase() === 'DISPONIBLE'
         );
@@ -204,6 +218,8 @@ export class CatalogoVehiculosComponent implements OnInit {
 
       const qDias = params.get('dias');
       if (qDias) this.diasCalculadosParam.set(Number(qDias));
+
+      this.cargarDisponibilidad();
     });
   }
 
