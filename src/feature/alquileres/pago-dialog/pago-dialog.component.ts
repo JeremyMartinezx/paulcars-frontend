@@ -19,7 +19,7 @@ import { categoriaVehiculo, formatearCodigoAlquiler, garantiaHold } from '../../
 
 export interface PagoDialogData {
   alquiler: Alquiler;
-  // ALQUILER = cobro del contrato y entrega de llaves; DEUDA = pago de la deuda del check-out
+  // ALQUILER = cobro del contrato (la entrega de llaves se registra aparte, con su acta); DEUDA = pago de la deuda del check-out
   modo?: 'ALQUILER' | 'DEUDA';
 }
 
@@ -96,6 +96,8 @@ export class PagoDialogComponent implements OnInit {
     ultimosDigitos: [''],
     numeroOperacion: [''],
     bancoOrigen: [''],
+    marcaTarjeta: [''],
+    numeroAutorizacion: [''],
     garantiaConfirmada: [true]
   });
 
@@ -192,8 +194,12 @@ export class PagoDialogComponent implements OnInit {
     c.ultimosDigitos.clearValidators();
     c.numeroOperacion.clearValidators();
     c.bancoOrigen.clearValidators();
+    c.marcaTarjeta.clearValidators();
+    c.numeroAutorizacion.clearValidators();
 
     if (tipo === 'pos') {
+      c.marcaTarjeta.setValidators([Validators.required]);
+      c.numeroAutorizacion.setValidators([Validators.required, Validators.pattern(/^[A-Z0-9]{4,12}$/)]);
       c.ultimosDigitos.setValidators([Validators.required, Validators.pattern(/^\d{4}$/)]);
       c.numeroOperacion.setValidators([Validators.required, Validators.pattern(/^\d{1,6}$/)]);
     } else if (tipo === 'yape') {
@@ -206,6 +212,16 @@ export class PagoDialogComponent implements OnInit {
     c.ultimosDigitos.updateValueAndValidity();
     c.numeroOperacion.updateValueAndValidity();
     c.bancoOrigen.updateValueAndValidity();
+    c.marcaTarjeta.updateValueAndValidity();
+    c.numeroAutorizacion.updateValueAndValidity();
+  }
+
+  // La autorización del voucher es alfanumérica: se escribe en mayúsculas y sin símbolos
+  onAutorizacion(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const limpio = (input.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+    input.value = limpio;
+    this.form.controls.numeroAutorizacion.setValue(limpio, { emitEvent: false });
   }
 
   onRecibidoInput(event: Event): void {
@@ -234,7 +250,9 @@ export class PagoDialogComponent implements OnInit {
       ultimosDigitos: tipo === 'pos' ? (v.ultimosDigitos ?? '').trim() : null,
       numeroOperacion: tipo !== 'efectivo' ? (v.numeroOperacion ?? '').trim() : null,
       bancoOrigen: tipo === 'yape' || tipo === 'transferencia' ? (v.bancoOrigen ?? '').trim() : null,
-      garantiaConfirmada: !this.esDeuda && !!v.garantiaConfirmada
+      garantiaConfirmada: !this.esDeuda && !!v.garantiaConfirmada,
+      marcaTarjeta: tipo === 'pos' ? v.marcaTarjeta : null,
+      numeroAutorizacion: tipo === 'pos' ? (v.numeroAutorizacion ?? '').trim() : null
     };
 
     this.cargando = true;

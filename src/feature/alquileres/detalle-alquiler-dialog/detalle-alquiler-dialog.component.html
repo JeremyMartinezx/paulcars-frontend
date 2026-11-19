@@ -1,0 +1,353 @@
+<header class="det-cabecera">
+  <div class="det-icono"><mat-icon>{{ iconoTitulo }}</mat-icon></div>
+  <div class="det-titulo">
+    <h2 mat-dialog-title>{{ titulo }}</h2>
+    <span>{{ codigo }} &bull; {{ vehiculoNombre }}</span>
+  </div>
+  <button mat-icon-button type="button" class="det-cerrar" (click)="cerrar()" aria-label="Cerrar">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<mat-dialog-content class="det-cuerpo">
+
+  <!-- Reserva aprobada que espera el pago: cuánto y hasta cuándo -->
+  @if (porPagar) {
+    <div class="det-aviso-pago">
+      <mat-icon>schedule</mat-icon>
+      <div>
+        @if (esPersonal) {
+          <strong>Por cobrar: S/ {{ total | number:'1.2-2' }}</strong>
+          @if (limitePagoTexto) {
+            <span>El cliente puede pagar hasta el {{ limitePagoTexto }}. Si no paga a tiempo, la reserva se cancela sola.</span>
+          }
+        } @else {
+          <strong>Pago pendiente: S/ {{ total | number:'1.2-2' }}</strong>
+          @if (limitePagoTexto) {
+            <span>Tiene disponible para pagar hasta el {{ limitePagoTexto }}. Si no se paga hasta esa hora, la reserva se cancelará.</span>
+          } @else {
+            <span>Si no se paga a tiempo, la reserva se cancelará.</span>
+          }
+        }
+      </div>
+    </div>
+  }
+
+  @if (esAdmin) {
+
+  <!-- Vehículo -->
+  <section class="det-card">
+    <h3><mat-icon>directions_car</mat-icon> Vehículo</h3>
+    <div class="det-vehiculo-fila">
+      <img class="det-foto-lado" [src]="vehiculoImagen" [alt]="vehiculoNombre" />
+      <div class="det-vehiculo-datos">
+        <div class="det-vehiculo-titulo">
+          <strong>{{ vehiculoNombre }}</strong>
+          <span>{{ placa }}@if (categoria) { &bull; {{ categoria }} }</span>
+        </div>
+        <dl class="det-lista det-lista-2">
+          <div><dt>Año</dt><dd>{{ vehiculo?.anio || '—' }}</dd></div>
+          <div><dt>Color</dt><dd>{{ a.vehiculoUnidad?.color || vehiculo?.color || '—' }}</dd></div>
+          <div><dt>Combustible</dt><dd>{{ vehiculo?.combustible?.nombreCombustible || '—' }}</dd></div>
+          <div><dt>Sede</dt><dd>{{ sede(a.vehiculoUnidad?.sede || vehiculo?.sede || a.sedeRecojo) || '—' }}</dd></div>
+          @if (a.vehiculoUnidad) {
+            <div><dt>Kilometraje actual</dt><dd>{{ (a.vehiculoUnidad.kilometraje ?? 0) | number }} km</dd></div>
+            <div><dt>Próximo mantenimiento</dt><dd>{{ (a.vehiculoUnidad.kmProximoMantenimiento ?? 0) | number }} km</dd></div>
+          }
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cliente y registro -->
+  <div class="det-fila-2">
+    <section class="det-card">
+      <h3><mat-icon>person</mat-icon> Cliente</h3>
+      <dl class="det-lista">
+        <div><dt>Nombre completo</dt><dd>{{ clienteNombre }}</dd></div>
+        <div><dt>{{ a.cliente.tipoDocumento || 'DNI' }}</dt><dd>{{ a.cliente.numeroDocumento || '—' }}</dd></div>
+        <div><dt>Licencia</dt><dd>{{ a.cliente.licenciaConducir || '—' }}</dd></div>
+        <div><dt>Teléfono</dt><dd>{{ a.cliente.telefono || '—' }}</dd></div>
+        <div><dt>Correo</dt><dd class="det-corto">{{ a.cliente.email || '—' }}</dd></div>
+      </dl>
+    </section>
+
+    <section class="det-card">
+      <h3><mat-icon>event</mat-icon> Registro</h3>
+      <dl class="det-lista">
+        <div><dt>Registrado</dt><dd>{{ fechaHora(a.fechaRegistro) }}</dd></div>
+        <div><dt>Último cambio de estado</dt><dd>{{ fechaHora(a.fechaUltimoEstado) }}</dd></div>
+        @if (fechaLimitePago) {
+          <div><dt>Pagar antes de</dt><dd class="det-limite">{{ fechaHora(fechaLimitePago) }}</dd></div>
+        }
+      </dl>
+    </section>
+  </div>
+
+  <!-- Periodo: pactado vs real -->
+  <section class="det-card">
+    <h3><mat-icon>schedule</mat-icon> Periodo y horas ({{ a.dias || 1 }} {{ (a.dias || 1) === 1 ? 'día' : 'días' }})</h3>
+    <div class="det-tabla-wrap">
+      <table class="det-tabla">
+        <thead>
+          <tr><th></th><th>Hora pactada</th><th>Hora real</th><th>Diferencia</th><th>Sede</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Recojo</th>
+            <td>{{ recojoPactado }}</td>
+            <td>{{ a.fechaEntrega ? fechaHora(a.fechaEntrega) : 'Sin recoger' }}</td>
+            <td><span class="dif" [class]="'dif ' + claseDif(difRecojo)">{{ textoDif(difRecojo) }}</span></td>
+            <td>{{ a.sedeRecojo || '—' }}</td>
+          </tr>
+          <tr>
+            <th>Devolución</th>
+            <td>{{ devolucionPactada }}</td>
+            <td>{{ a.fechaCheckout ? fechaHora(a.fechaCheckout) : 'Sin devolver' }}</td>
+            <td><span class="dif" [class]="'dif ' + claseDif(difDevolucion)">{{ textoDif(difDevolucion) }}</span></td>
+            <td>{{ a.sedeDevolucion || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Entrega de llaves: solo cuando ya se entregó, o cuando está pagada y falta entregarla -->
+  @if (entregado) {
+    <section class="det-card">
+      <h3><mat-icon>key</mat-icon> Entrega de llaves</h3>
+      <dl class="det-lista det-lista-2">
+        <div><dt>Fecha y hora</dt><dd>{{ fechaHora(a.fechaEntrega) }}</dd></div>
+        <div><dt>Entregado por</dt><dd>{{ a.entregadoPor || 'Counter' }}</dd></div>
+        <div><dt>Kilometraje de salida</dt><dd>{{ a.kmEntrega !== null && a.kmEntrega !== undefined ? (a.kmEntrega | number) + ' km' : '—' }}</dd></div>
+        <div><dt>Combustible de salida</dt><dd>{{ etiquetaCombustible(a.combustibleEntrega) }}</dd></div>
+      </dl>
+    </section>
+  } @else if (reservaPagada) {
+    <section class="det-card">
+      <h3><mat-icon>key</mat-icon> Entrega de llaves</h3>
+      <p class="det-vacio">Las llaves todavía no se han entregado.</p>
+    </section>
+  }
+
+  <ng-container [ngTemplateOutlet]="tarjetaDanos" />
+
+  <!-- Recepción del vehículo: solo al finalizar -->
+  @if (esFinalizado) {
+    <section class="det-card">
+      <h3><mat-icon>assignment_turned_in</mat-icon> Recepción del vehículo</h3>
+      <dl class="det-lista det-lista-2">
+        <div><dt>Fecha y hora</dt><dd>{{ fechaHora(a.fechaCheckout) }}</dd></div>
+        <div><dt>Kilometraje al recibir</dt><dd>{{ a.kmDevolucion !== null && a.kmDevolucion !== undefined ? (a.kmDevolucion | number) + ' km' : '—' }}</dd></div>
+        <div><dt>Kilómetros recorridos</dt><dd>{{ kmRecorridos !== null ? (kmRecorridos | number) + ' km' : '—' }}</dd></div>
+        <div><dt>Combustible al recibir</dt><dd>{{ etiquetaCombustible(a.combustibleDevolucion) }}</dd></div>
+        @if ((a.cargoCombustible ?? 0) > 0) { <div><dt>Cargo por combustible</dt><dd>S/ {{ a.cargoCombustible | number:'1.2-2' }}</dd></div> }
+        @if ((a.cargoRetraso ?? 0) > 0) { <div><dt>Cargo por retraso ({{ a.minutosRetraso }} min)</dt><dd>S/ {{ a.cargoRetraso | number:'1.2-2' }}</dd></div> }
+        @if (observacionRecepcion) {
+          <div class="det-ancho"><dt>Observaciones</dt><dd class="det-obs">{{ observacionRecepcion }}</dd></div>
+        }
+      </dl>
+    </section>
+  }
+
+  <!-- Importes y pagos -->
+  <section class="det-card">
+    <h3><mat-icon>payments</mat-icon> {{ esSolicitud ? 'Importe' : 'Importes y pagos' }}</h3>
+    <div class="det-montos">
+      <div><span>Alquiler base</span><strong>S/ {{ (a.precioBase ?? 0) | number:'1.2-2' }}</strong></div>
+      <div><span>Servicios extras</span><strong>S/ {{ (a.montoExtras ?? 0) | number:'1.2-2' }}</strong></div>
+      <div><span>{{ etiquetaTotal }}</span><strong>S/ {{ total | number:'1.2-2' }}</strong></div>
+      @if (mostrarPagado) {
+        <div><span>Pagado</span><strong>S/ {{ pagado() | number:'1.2-2' }}</strong></div>
+        <div class="det-saldo" [class.pendiente]="saldo() > 0"><span>Saldo</span><strong>S/ {{ saldo() | number:'1.2-2' }}</strong></div>
+      }
+    </div>
+    @if (a.serviciosExtras && a.serviciosExtras.toLowerCase() !== 'ninguno') {
+      <p class="det-nota">Extras contratados: {{ a.serviciosExtras }}</p>
+    }
+    @if (esSolicitud) {
+      <p class="det-nota">Cotización referencial: se confirma cuando la solicitud sea aprobada. Aún no se ha cobrado nada.</p>
+    }
+
+    @if (tienePagos) {
+      <div class="det-tabla-wrap">
+        <table class="det-tabla">
+          <thead>
+            <tr><th>Pago</th><th>Fecha y hora</th><th>Método</th><th class="det-der">Importe</th></tr>
+          </thead>
+          <tbody>
+            @for (p of pagos(); track p.idPago) {
+              <tr>
+                <td>REC-{{ ('000000' + p.idPago).slice(-6) }}{{ p.tipoPago === 'LIQUIDACION' ? ' (liquidación)' : '' }}</td>
+                <td>{{ fechaHora(p.fechaHoraPago || p.fechaPago) }}</td>
+                <td>{{ p.metodoPago?.nombreMetodo || '—' }}</td>
+                <td class="det-der">S/ {{ p.montoTotal | number:'1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (!esSolicitud) {
+      <p class="det-vacio">Todavía no hay pagos registrados.</p>
+    }
+  </section>
+
+  <!-- Historial de estados (con hora, minuto y segundo) -->
+  <section class="det-card">
+    <h3><mat-icon>history</mat-icon> Historial de estados</h3>
+    @if (historial().length > 0) {
+      <ol class="det-timeline">
+        @for (h of historial(); track $index) {
+          <li>
+            <span class="punto"></span>
+            <div>
+              <strong>{{ etiquetaEstado(h.estadoAnterior) }} → {{ etiquetaEstado(h.estadoNuevo) }}</strong>
+              <small>{{ fechaHora(h.fechaHora) }}</small>
+            </div>
+          </li>
+        }
+      </ol>
+    } @else {
+      <p class="det-vacio">Último cambio de estado: {{ fechaHora(a.fechaUltimoEstado) }}.</p>
+    }
+  </section>
+  }
+  @else {
+    <!-- Vista sencilla: cliente y asesor -->
+    @if (esPersonal) {
+      <section class="det-card">
+        <h3><mat-icon>person</mat-icon> Cliente</h3>
+        <dl class="det-lista">
+          <div><dt>Nombre</dt><dd>{{ clienteNombre }}</dd></div>
+          <div><dt>{{ a.cliente.tipoDocumento || 'DNI' }}</dt><dd>{{ a.cliente.numeroDocumento || '—' }}</dd></div>
+          <div><dt>Teléfono</dt><dd>{{ a.cliente.telefono || '—' }}</dd></div>
+        </dl>
+      </section>
+    }
+
+    <section class="det-card">
+      <h3><mat-icon>event_note</mat-icon> {{ esPersonal ? 'Reserva' : 'Su reserva' }}</h3>
+      <div class="det-vehiculo">
+        <img class="det-foto-mini" [src]="vehiculoImagen" [alt]="vehiculoNombre" />
+        <div>
+          <strong>{{ vehiculoNombre }}</strong>
+          <span>@if (placa !== 'Por asignar') { {{ placa }} &bull; }{{ categoria }}</span>
+        </div>
+      </div>
+      <dl class="det-lista">
+        <div><dt>Recojo</dt><dd>{{ fechaLarga(a.fechaInicio) }} &bull; {{ a.horaRecojo || '—' }} hrs@if (sedeRecojoTexto) { &bull; {{ sedeRecojoTexto }} }</dd></div>
+        <div><dt>Devolución</dt><dd>{{ fechaLarga(a.fechaFinEstimada) }} &bull; {{ a.horaDevolucion || '—' }} hrs@if (a.sedeDevolucion) { &bull; {{ sede(a.sedeDevolucion) }} }</dd></div>
+        <div><dt>{{ esSolicitud ? 'Total estimado' : 'Total' }} ({{ a.dias || 1 }} {{ (a.dias || 1) === 1 ? 'día' : 'días' }})</dt><dd>S/ {{ total | number:'1.2-2' }}</dd></div>
+        @if (!esSolicitud) {
+          <div><dt>Pago</dt><dd [class.det-pend]="pagoPendiente" [class.det-ok]="!pagoPendiente">{{ pagoTexto }}</dd></div>
+        }
+      </dl>
+    </section>
+
+    @if (entregado) {
+      <section class="det-card">
+        <h3><mat-icon>key</mat-icon> Entrega y devolución</h3>
+        <dl class="det-lista">
+          <div><dt>Vehículo entregado</dt><dd>{{ fechaHoraMin(a.fechaEntrega) }}@if (esPersonal && a.entregadoPor) { &bull; {{ a.entregadoPor }} }</dd></div>
+          @if (esPersonal) {
+            <div><dt>Kilometraje de salida</dt><dd>{{ a.kmEntrega !== null && a.kmEntrega !== undefined ? (a.kmEntrega | number) + ' km' : '—' }}</dd></div>
+            <div><dt>Combustible de salida</dt><dd>{{ etiquetaCombustible(a.combustibleEntrega) }}</dd></div>
+          }
+          @if (esFinalizado) {
+            <div><dt>Vehículo devuelto</dt><dd>{{ fechaHoraMin(a.fechaCheckout) }}</dd></div>
+            @if (esPersonal) {
+              <div><dt>Kilometraje al recibir</dt><dd>{{ a.kmDevolucion !== null && a.kmDevolucion !== undefined ? (a.kmDevolucion | number) + ' km' : '—' }}</dd></div>
+              <div><dt>Kilómetros recorridos</dt><dd>{{ kmRecorridos !== null ? (kmRecorridos | number) + ' km' : '—' }}</dd></div>
+              <div><dt>Combustible al recibir</dt><dd>{{ etiquetaCombustible(a.combustibleDevolucion) }}</dd></div>
+              @if ((a.cargoCombustible ?? 0) > 0) { <div><dt>Cargo por combustible</dt><dd>S/ {{ a.cargoCombustible | number:'1.2-2' }}</dd></div> }
+              @if ((a.cargoRetraso ?? 0) > 0) { <div><dt>Cargo por retraso ({{ a.minutosRetraso }} min)</dt><dd>S/ {{ a.cargoRetraso | number:'1.2-2' }}</dd></div> }
+            }
+            @if (esPersonal) {
+            }
+          }
+        </dl>
+      </section>
+    }
+
+    <ng-container [ngTemplateOutlet]="tarjetaDanos" />
+
+    <section class="det-card">
+      <h3><mat-icon>history</mat-icon> Seguimiento</h3>
+      @if (historial().length > 0) {
+        <ol class="det-timeline">
+          @for (h of historial(); track $index) {
+            <li>
+              <span class="punto"></span>
+              <div>
+                <strong>{{ frase(h) }}</strong>
+                <small>{{ fechaHora(h.fechaHora) }}</small>
+              </div>
+            </li>
+          }
+        </ol>
+      } @else {
+        <p class="det-vacio">Último cambio: {{ fechaHora(a.fechaUltimoEstado) }}.</p>
+      }
+    </section>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="det-acciones">
+  <button mat-button type="button" (click)="cerrar()">Cerrar</button>
+</mat-dialog-actions>
+
+<!-- Daños del vehículo: lo que ya tenía al entregarlo, lo nuevo al recibirlo y la evaluación -->
+<ng-template #tarjetaDanos>
+  @if (mostrarDanos) {
+    @if (danos(); as d) {
+      <section class="det-card">
+        <h3><mat-icon>car_crash</mat-icon> Daños del vehículo</h3>
+        <p class="dn-sub">Al entregar el vehículo</p>
+        @if (d.entrega.length === 0) {
+          <p class="dn-vacio">Sin daños: se entregó en buen estado.</p>
+        }
+        @for (x of d.entrega; track x.idDano) {
+          <div class="dn-fila">
+            <a [href]="foto(x.fotoUrl)" target="_blank" rel="noopener"><img [src]="foto(x.fotoUrl)" alt="Foto del daño" /></a>
+            <span><strong>{{ etiquetaZona(x.zona) }}</strong> · {{ etiquetaTipoDano(x.tipo) }} ({{ etiquetaGravedad(x.gravedad).toLowerCase() }}) — {{ x.descripcion }}</span>
+          </div>
+        }
+
+        <p class="dn-sub">Al recibir el vehículo</p>
+        @if (d.recepcion.length === 0) {
+          <p class="dn-vacio">{{ esFinalizado ? 'Sin daños nuevos.' : 'Aún no se recibe el vehículo.' }}</p>
+        }
+        @if (d.recepcion.length > 0) {
+          @for (x of d.recepcion; track x.idDano) {
+            <div class="dn-fila">
+              <a [href]="foto(x.fotoUrl)" target="_blank" rel="noopener"><img [src]="foto(x.fotoUrl)" alt="Foto del daño" /></a>
+              <span>
+                <strong>{{ etiquetaZona(x.zona) }}</strong> · {{ etiquetaTipoDano(x.tipo) }} ({{ etiquetaGravedad(x.gravedad).toLowerCase() }}) — {{ x.descripcion }}
+                @if (x.costoReparacion !== null && x.costoReparacion !== undefined) { <em>· reparación S/ {{ x.costoReparacion | number:'1.2-2' }}</em> }
+              </span>
+            </div>
+          }
+          @if (d.estadoDanos === 'PENDIENTE_EVALUACION') {
+            <p class="dn-aviso">En evaluación: la garantía permanece retenida hasta que el administrador defina el costo.</p>
+          } @else {
+            @if (d.tasacion; as t) {
+              <dl class="det-lista det-lista-2 dn-tasacion">
+                <div><dt>Costo de reparación</dt><dd>S/ {{ t.costoTotal | number:'1.2-2' }}</dd></div>
+                @if (t.seguroAplica) { <div><dt>Cubierto por el seguro</dt><dd>S/ {{ t.cubiertoSeguro | number:'1.2-2' }}</dd></div> }
+                @if (t.tieneSeguro && !t.seguroAplica) { <div><dt>Seguro Todo Riesgo</dt><dd>No aplica (exclusión)</dd></div> }
+                <div><dt>{{ t.seguroAplica ? 'Deducible a cargo del cliente' : 'A cargo del cliente' }}</dt><dd>S/ {{ t.cargoCliente | number:'1.2-2' }}</dd></div>
+                <div><dt>Garantía liberada</dt><dd>S/ {{ t.garantiaLiberada | number:'1.2-2' }}</dd></div>
+                @if (t.deuda > 0) {
+                  <div><dt>Deuda del cliente</dt><dd>S/ {{ t.deuda | number:'1.2-2' }}</dd></div>
+                  <div><dt>Pagado</dt><dd>S/ {{ d.deudaPagada | number:'1.2-2' }}</dd></div>
+                  <div><dt>Saldo pendiente</dt><dd>S/ {{ d.deudaPendiente | number:'1.2-2' }}</dd></div>
+                }
+                @if (d.observacionTasacion) { <div class="det-ancho"><dt>Observación de la evaluación</dt><dd class="det-obs">{{ d.observacionTasacion }}</dd></div> }
+              </dl>
+            }
+          }
+        }
+      </section>
+    }
+  }
+</ng-template>
