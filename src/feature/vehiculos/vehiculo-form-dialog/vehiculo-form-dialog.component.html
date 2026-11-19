@@ -75,6 +75,15 @@
             <mat-error>Obligatorio.</mat-error>
           }
         </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="campo-completo">
+          <mat-label>Mantenimiento cada (km)</mat-label>
+          <input matInput type="number" inputmode="numeric" formControlName="kmMantenimiento">
+          <span matTextSuffix>km</span>
+          @if (form.controls.kmMantenimiento.invalid && form.controls.kmMantenimiento.touched) {
+            <mat-error>Ingrese un valor entre 1,000 y 100,000 km.</mat-error>
+          }
+        </mat-form-field>
       </div>
 
       <!-- Gestor de galería de 4 imágenes -->
@@ -98,9 +107,6 @@
                     <mat-icon>delete</mat-icon>
                   </button>
                 </div>
-                @if (foto.archivo) {
-                  <span class="foto-pendiente">Sin guardar</span>
-                }
               } @else {
                 <label class="foto-vacia">
                   <mat-icon>add_a_photo</mat-icon>

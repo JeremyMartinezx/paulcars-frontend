@@ -307,3 +307,8 @@ mat-form-field {
   font-size: 0.82rem;
   margin: 8px 0 0;
 }
+
+/* El campo de mantenimiento ocupa todo el ancho de la fila */
+.campo-completo {
+  grid-column: 1 / -1;
+}

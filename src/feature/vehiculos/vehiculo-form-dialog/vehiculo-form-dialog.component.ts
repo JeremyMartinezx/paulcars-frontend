@@ -92,6 +92,7 @@ export class VehiculoFormDialogComponent implements OnInit, OnDestroy {
       [Validators.required, Validators.min(1990), Validators.max(new Date().getFullYear() + 1)]
     ],
     precioDia: [this.data?.vehiculo?.precioDia ?? 0, [Validators.required, Validators.min(1)]],
+    kmMantenimiento: [(this.data?.vehiculo as any)?.kmMantenimiento ?? 10000, [Validators.required, Validators.min(1000), Validators.max(100000)]],
     idModelo: [this.data?.vehiculo?.modelo?.idModelo ?? null, [Validators.required]],
     idTipo: [this.data?.vehiculo?.tipo?.idTipo ?? null, [Validators.required]],
     idCombustible: [this.data?.vehiculo?.combustible?.idCombustible ?? null, [Validators.required]],
@@ -281,7 +282,7 @@ export class VehiculoFormDialogComponent implements OnInit, OnDestroy {
           numeroVin: this.data?.vehiculo?.numeroVin ?? 'VIN-MOD',
           precioDia: valores.precioDia || 0,
           precioHora: Math.round(((valores.precioDia || 0) / 8) * 100) / 100,
-          kilometraje: this.data?.vehiculo?.kilometraje ?? 0,
+          kmMantenimiento: valores.kmMantenimiento || 10000,
           sede: valores.sede || 'MIRAFLORES',
           activo: esDisponible,
           imagenUrl: imagenes.find((img) => img.orden === 1)?.urlImagen,
