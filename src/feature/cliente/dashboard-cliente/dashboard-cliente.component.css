@@ -1632,3 +1632,52 @@
     align-self: flex-end;
   }
 }
+
+/* ───── Columnas Detalle y Comprobante (cada una con su propio ancho) ───── */
+.custom-table {
+  min-width: 760px;
+}
+
+.custom-table th.col-vehiculo,
+.custom-table td.col-vehiculo { width: 28%; }
+.custom-table th.col-periodo,
+.custom-table td.col-periodo { width: 24%; }
+.custom-table th.col-estado,
+.custom-table td.col-estado { width: 16%; }
+
+.custom-table th.col-detalle,
+.custom-table td.col-detalle,
+.custom-table th.col-comprobante,
+.custom-table td.col-comprobante {
+  width: 16%;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  text-align: center !important;
+}
+
+.custom-table thead th.col-detalle {
+  text-align: center !important;
+}
+
+/* Periodo compacto: solo las fechas */
+.periodo-compacto {
+  display: flex;
+  align-items: center;
+}
+
+.periodo-fechas {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.flecha-periodo {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: #94a3b8;
+}

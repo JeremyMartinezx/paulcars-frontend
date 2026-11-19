@@ -166,6 +166,7 @@
                 <th scope="col" class="col-vehiculo">VEHÍCULO</th>
                 <th scope="col" class="col-periodo">PERIODO</th>
                 <th scope="col" class="col-estado" style="text-align: center;">ESTADO</th>
+                <th scope="col" class="col-detalle" style="text-align: center;">DETALLE</th>
                 <th scope="col" class="col-comprobante" style="text-align: center;">COMPROBANTE</th>
               </tr>
             </thead>
@@ -188,17 +189,11 @@
                     </div>
                   </td>
                   <td class="col-periodo">
-                    <div class="periodo-asesor-cell">
-                      <div class="periodo-linea">
-                        <mat-icon class="ic-periodo">calendar_today</mat-icon>
-                        <strong class="fecha-txt">{{ a.fechaInicio }}</strong>
-                        <span class="hora-badge">{{ a.horaRecojo || '10:00' }} hrs</span>
-                      </div>
-                      <div class="periodo-linea sub">
-                        <mat-icon class="ic-periodo">event_repeat</mat-icon>
-                        <span class="fecha-txt">{{ a.fechaFinEstimada }}</span>
-                        <span class="hora-badge sub">{{ a.horaDevolucion || '18:00' }} hrs</span>
-                      </div>
+                    <div
+                      class="periodo-compacto"
+                      [matTooltip]="'Recojo: ' + a.fechaInicio + ' ' + (a.horaRecojo || '10:00') + ' hrs  ·  Devolución: ' + a.fechaFinEstimada + ' ' + (a.horaDevolucion || '18:00') + ' hrs'"
+                    >
+                      <span class="periodo-fechas">{{ fechaDiaMes(a.fechaInicio) }} <mat-icon class="flecha-periodo">arrow_right_alt</mat-icon> {{ fechaDiaMes(a.fechaFinEstimada) }}</span>
                     </div>
                   </td>
                   <td class="col-estado" style="text-align: center;">
@@ -224,23 +219,24 @@
                       }
                     </div>
                   </td>
-                  <td class="col-comprobante" style="text-align: center;">
-                    @let pagado = esReservaPagada(a) || est === 'PAGADO' || est === 'CONFIRMADO' || est === 'ACTIVO' || est === 'EN_CURSO' || est === 'EN CURSO' || est === 'FINALIZADO';
+                  <td class="col-detalle" style="text-align: center;">
                     @if (est === 'CANCELADO' || est === 'RECHAZADO' || est === 'CANCELADO_SIN_STOCK' || est === 'RECHAZADO_DOCUMENTACION') {
                       <span class="tabla-vacio-dash">&mdash;</span>
                     } @else {
-                      <button
-                        type="button"
-                        class="btn-tabla-comprobante"
-                        (click)="abrirDetalleLiquidacion(a)"
-                      >
-                        <mat-icon class="btn-ic">
-                          {{ est === 'PENDIENTE' ? 'description' : (!pagado ? 'event_note' : 'receipt_long') }}
-                        </mat-icon>
-                        <span>
-                          {{ est === 'PENDIENTE' ? 'Solicitud' : (!pagado ? 'Reserva' : 'Ver') }}
-                        </span>
+                      <button type="button" class="btn-tabla-comprobante" (click)="abrirDetalleLiquidacion(a)">
+                        <mat-icon class="btn-ic">visibility</mat-icon>
+                        <span>Ver detalle</span>
                       </button>
+                    }
+                  </td>
+                  <td class="col-comprobante" style="text-align: center;">
+                    @if (tieneComprobante(a)) {
+                      <button type="button" class="btn-tabla-comprobante" (click)="verComprobante(a)">
+                        <mat-icon class="btn-ic">picture_as_pdf</mat-icon>
+                        <span>Ver PDF</span>
+                      </button>
+                    } @else {
+                      <span class="tabla-vacio-dash">&mdash;</span>
                     }
                   </td>
                 </tr>
