@@ -32,6 +32,23 @@ export class AuthService {
   readonly estaAutenticado = computed(() => !!this.usuarioSignal());
   readonly rolActual = computed(() => this.usuarioSignal()?.rol ?? null);
 
+  // Cierre de sesión por inactividad (30 min sin mover el mouse, teclear, tocar o desplazarse)
+  private readonly inactividadMs = 30 * 60 * 1000;
+  private ultimaActividad = Date.now();
+
+  constructor() {
+    if (typeof window === 'undefined') return;
+    const marcar = () => { this.ultimaActividad = Date.now(); };
+    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach((e) =>
+      window.addEventListener(e, marcar, { passive: true })
+    );
+    setInterval(() => {
+      if (this.usuarioSignal() && Date.now() - this.ultimaActividad > this.inactividadMs) {
+        this.logout('/login');
+      }
+    }, 60_000);
+  }
+
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, credentials).pipe(
       tap((response) => this.guardarSesion(response))
