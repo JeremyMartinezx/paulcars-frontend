@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Injectable, inject, signal } from '@angular/core';
+import { huboCambios } from '../utils/comparar.util';
 import { Observable, tap } from 'rxjs';
 
 import { CrearUsuarioRequest, Rol, Usuario } from '../models/usuario.model';
@@ -17,9 +18,10 @@ export class UsuarioService {
 
   cargar(): void {
     this.http.get<Usuario[]>(this.apiUrl).subscribe({
-      next: (data) => this.usuariosSignal.set(
-        [...data].sort((a, b) => (b.idUsuario ?? 0) - (a.idUsuario ?? 0))
-      ),
+      next: (data) => {
+        const lista = [...data].sort((a, b) => (b.idUsuario ?? 0) - (a.idUsuario ?? 0));
+        if (huboCambios(this.usuariosSignal(), lista)) this.usuariosSignal.set(lista);
+      },
       error: (err) => console.error('Error cargando usuarios:', err)
     });
   }
