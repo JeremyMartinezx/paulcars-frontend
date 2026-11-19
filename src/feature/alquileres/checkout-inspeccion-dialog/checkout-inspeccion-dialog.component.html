@@ -18,22 +18,139 @@
 </header>
 
 <mat-dialog-content class="dialog-content">
-  <div class="message-card">
-    <p class="dialog-prompt">¿Deseas confirmar la recepción de llaves y retorno del vehículo?</p>
-    <ul class="dialog-detalles">
-      <li>Cliente: {{ clienteNombre() }}</li>
-      <li>
-        Vehículo: {{ modeloVehiculo() }}
-        @if (placaVehiculo()) {
-          <span> (Placa: {{ placaVehiculo() }})</span>
+  <section class="resumen-recepcion">
+    <div><span class="lbl">Cliente</span><strong>{{ clienteNombre() }}</strong></div>
+    <div>
+      <span class="lbl">Vehículo</span>
+      <strong>{{ modeloVehiculo() }}@if (placaVehiculo()) { &bull; {{ placaVehiculo() }} }</strong>
+    </div>
+    <div>
+      <span class="lbl">Salió con</span>
+      <strong>{{ kmEntrega | number }} km &bull; combustible {{ etiquetaCombustible(combustibleEntrega) }}</strong>
+    </div>
+  </section>
+
+  <dl class="datos-recepcion">
+    <div class="fila-control">
+      <dt>Kilometraje al recibir</dt>
+      <dd>
+        <span class="km-wrap">
+          <input
+            id="kmRecepcion"
+            type="number"
+            min="0"
+            inputmode="numeric"
+            class="input-km"
+            [class.invalido]="!!kmError"
+            [value]="kilometraje ?? ''"
+            (input)="onKm($any($event.target).value)"
+            aria-label="Kilometraje al recibir"
+          />
+          <span class="km-unidad">km</span>
+        </span>
+        @if (kmError) {
+          <small class="error">{{ kmError }}</small>
+        } @else if (kmRecorridos > 0) {
+          <small>Recorrió <strong>{{ kmRecorridos | number }} km</strong>.</small>
+        } @else {
+          <small>Lectura del odómetro al devolver el vehículo.</small>
         }
-      </li>
-      <li>Garantía: Retención liberada tras recepción conforme</li>
-    </ul>
-    <p class="dialog-nota">
-      El vehículo pasará a estado disponible y el contrato quedará finalizado.
-    </p>
-  </div>
+      </dd>
+    </div>
+
+    <div class="fila-control">
+      <dt>Nivel de combustible</dt>
+      <dd>
+        <span class="chips-combustible" role="radiogroup" aria-label="Nivel de combustible al recibir">
+          @for (n of niveles; track n.valor) {
+            <button
+              type="button"
+              class="chip-combustible"
+              role="radio"
+              [class.activo]="combustible === n.valor"
+              [attr.aria-checked]="combustible === n.valor"
+              (click)="elegirCombustible(n.valor)"
+            >{{ n.etiqueta }}</button>
+          }
+        </span>
+        @if (menosCombustible) {
+          <small class="aviso">Salió con {{ etiquetaCombustible(combustibleEntrega) }} y regresa con {{ etiquetaCombustible(combustible) }}.</small>
+        } @else {
+          <small>Según el indicador del tablero.</small>
+        }
+      </dd>
+    </div>
+
+    <div class="fila-control">
+      <dt>Hora de devolución</dt>
+      <dd>
+        <strong class="reloj">{{ relojTexto }}</strong>
+        <small>Pactada: {{ devolucionPactada() }}.</small>
+      </dd>
+    </div>
+  </dl>
+
+  <!-- Daños nuevos: se comparan con el estado de entrega -->
+  <section class="bloque-danos">
+    <h3>Daños nuevos</h3>
+    <p class="ayuda-danos">Daños encontrados al recibir el vehículo que no tenía al entregarlo.</p>
+    <app-inspeccion-danos
+      [(danos)]="danosNuevos"
+      [(abierto)]="editandoDano"
+      [referencia]="danosEntrega()"
+      textoSinDanos=""
+    />
+  </section>
+
+  <!-- Liquidación: lo que se descuenta de la garantía -->
+  <section class="liquidacion">
+    <h3>Cargos de la recepción</h3>
+    <div class="liq-fila">
+      <span>Combustible faltante @if (cargos(); as c) { @if (c.cuartosFaltantes > 0) { ({{ c.cuartosFaltantes }} {{ c.cuartosFaltantes === 1 ? 'cuarto' : 'cuartos' }}) } }</span>
+      <strong>S/ {{ (cargos()?.cargoCombustible ?? 0) | number:'1.2-2' }}</strong>
+    </div>
+    <div class="liq-fila">
+      <span>Retraso @if ((cargos()?.minutosRetraso ?? 0) > 0) { ({{ cargos()?.minutosRetraso }} min) }</span>
+      <strong>S/ {{ (cargos()?.cargoRetraso ?? 0) | number:'1.2-2' }}</strong>
+    </div>
+    <div class="liq-fila liq-total">
+      <span>Total de cargos</span>
+      <strong>S/ {{ totalCargos | number:'1.2-2' }}</strong>
+    </div>
+    @if (danosNuevos().length > 0) {
+      <p class="liq-nota">
+        Hay daños nuevos: la garantía @if (cargos(); as c) { (S/ {{ c.garantia | number:'1.2-2' }}) } <strong>queda retenida</strong> hasta que el administrador los evalúe.
+        Allí se define cuánto cubre el seguro y cuánto paga el cliente.
+      </p>
+    } @else if (cargos()) {
+      @let c = cargos()!;
+      <p class="liq-nota">
+        @if (!hayCargos) {
+          Sin cargos: se libera la garantía completa (S/ {{ c.garantia | number:'1.2-2' }}).
+        } @else if (saldoPorCobrar > 0) {
+          Se descuenta toda la garantía (S/ {{ c.garantia | number:'1.2-2' }}) y quedan <strong>S/ {{ saldoPorCobrar | number:'1.2-2' }}</strong> por cobrar al cliente.
+        } @else {
+          Se descuenta de la garantía (S/ {{ c.garantia | number:'1.2-2' }}); se libera <strong>S/ {{ c.garantia - totalCargos | number:'1.2-2' }}</strong>.
+        }
+      </p>
+    } @else {
+      <p class="liq-nota">Seleccione el combustible para calcular los cargos.</p>
+    }
+  </section>
+
+  @if (irAMantenimiento) {
+    <div class="alerta-mant">
+      <mat-icon>build</mat-icon>
+      <span>
+        @if (kmRestantesMantenimiento === 0) {
+          La unidad alcanza su mantenimiento ({{ kmProximoMantenimiento | number }} km).
+        } @else {
+          A la unidad le quedan {{ kmRestantesMantenimiento | number }} km para su mantenimiento ({{ kmProximoMantenimiento | number }} km).
+        }
+        Al confirmar pasará a <strong>Mantenimiento</strong>.
+      </span>
+    </div>
+  }
 
   @if (error) {
     <div class="alerta-error">
